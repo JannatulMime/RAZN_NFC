@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct HomeScreenView: View {
+   
+    
     var body: some View {
         ZStack {
             // Background
@@ -23,29 +25,13 @@ struct HomeScreenView: View {
                                     )
                                 )
 
-            
-            
                                
             VStack {
-//                        HStack {
-//                            // Settings Icon
-//                            Image("settingIcon")
-//                                .resizable()
-//                                .frame(width: 40, height: 40)
-//                                .foregroundColor(.white)
-//                                .padding()
-//
-//                            Spacer()
-//
-//                            // Share Icon
-//                            Image("shareIcon")
-//                                .resizable()
-//                                .frame(width: 40, height: 40)
-//                                .foregroundColor(.white)
-//                                .padding()
-//                        }
                 
-                Spacer()
+                TopBarView(leftBtnIcon: "settingIcon", rightBtnIcon: "shareIcon", mainTitle: "NFC TOOLS")
+                   
+
+               Spacer()
                 
                 // Logo
                 ZStack {
@@ -64,7 +50,7 @@ struct HomeScreenView: View {
                 Spacer()
                 
                 // Welcome Text
-                VStack(spacing: 10) {
+                VStack(spacing: 50) {
                     
                     Image("welcomeImgDesign")
                         .resizable()
@@ -72,7 +58,7 @@ struct HomeScreenView: View {
                   
                 }
                 
-                Spacer()
+              //  Spacer()
                 
                 // Write Button
                 Button(action: {
@@ -90,6 +76,8 @@ struct HomeScreenView: View {
                 Image("upArrow")
                     .resizable()
                     .frame(width: 80, height: 80)
+                
+               
             }
         }
     }
