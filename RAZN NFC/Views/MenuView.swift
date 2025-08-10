@@ -10,7 +10,6 @@ import SwiftUI
 struct MenuView: View {
     var body: some View {
         ZStack {
-           
             Image("BG")
                 .resizable()
                 .scaledToFill()
@@ -22,30 +21,24 @@ struct MenuView: View {
                         endPoint: .bottom
                     )
                 )
-            
-            VStack {
-                
-                TopBarView(mainTitle: "write", leftBtnTitle: "Menu", rightBtnTitle: "edit")
-                
-                Button(action: {
-                   
-                }) {
 
+            VStack {
+                TopBarView(mainTitle: "write", leftBtnTitle: "Menu", rightBtnTitle: "edit")
+
+                Button(action: {
+                }) {
                     Image("addFieldButton")
                         .resizable()
                         .frame(width: 350, height: 90)
                 }
-                
-                
-                Button(action: {
-                   
-                }) {
 
+                Button(action: {
+                }) {
                     Image("writeButton")
                         .resizable()
                         .frame(width: 350, height: 90)
                 }
-                
+
                 Spacer()
             }
         }

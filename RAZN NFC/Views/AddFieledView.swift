@@ -22,28 +22,21 @@ struct AddFieledView: View {
                         endPoint: .bottom
                     )
                 )
-            
-            VStack {
-                
-                TopBarView(mainTitle: "add fieled", leftBtnTitle: "Write")
-                
-                Button(action: {
-                   
-                }) {
 
+            VStack {
+                TopBarView(mainTitle: "add fieled", leftBtnTitle: "Write")
+
+                Button(action: {
+                }) {
                     Image("add_url_field")
                         .resizable()
                         .scaledToFill()
                         .frame(width: 200, height: 120)
-                    
                 }
-                
-                
-                
+
                 Spacer()
             }
         }
-
     }
 }
 

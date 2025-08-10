@@ -12,6 +12,7 @@ struct RAZN_NFCApp: App {
     var body: some Scene {
         WindowGroup {
             HomeScreenView()
+//            NFCReaderView()
         }
     }
 }
