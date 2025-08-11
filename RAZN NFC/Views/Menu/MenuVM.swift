@@ -10,6 +10,6 @@ import Foundation
 
 class MenuVM: ObservableObject {
     
-    @Published var gotoHomeScreen: Bool = false
+    @Published var gotoAddFieled: Bool = false
 }
 
