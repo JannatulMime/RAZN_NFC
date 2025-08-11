@@ -8,25 +8,15 @@
 import SwiftUI
 
 struct AddURLFieldView: View {
-    @State private var name: String = ""
+  
     @State private var urlText: String = ""
     
     var body: some View {
         ZStack {
             
-            Image("BG")
-                .resizable()
-                .scaledToFill()
-                .edgesIgnoringSafeArea(.all)
-                .overlay(
-                    LinearGradient(
-                        gradient: Gradient(colors: [Color.black.opacity(0.0), Color.black.opacity(0.8)]),
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
+            customBG
             
-            VStack (spacing: 0){
+            VStack (spacing: 0) {
                 
                 TopBarView(mainTitle: "add fieled", leftBtnTitle: "back", rightBtnTitle: "OK")
                     .background(.black)
@@ -38,6 +28,7 @@ struct AddURLFieldView: View {
                
             }
         }
+        .navigationBarBackButtonHidden(true)
     }
 }
 
@@ -46,6 +37,22 @@ struct AddURLFieldView: View {
 }
 
 extension AddURLFieldView {
+    
+    var customBG: some View {
+        
+        Image("BG")
+            .resizable()
+            .scaledToFill()
+            .edgesIgnoringSafeArea(.all)
+            .overlay(
+                LinearGradient(
+                    gradient: Gradient(colors: [Color.black.opacity(0.0), Color.black.opacity(0.8)]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+    }
+    
     
     var urlSection: some View {
         HStack(spacing: 10) {

@@ -16,26 +16,41 @@ struct TopBarView: View {
     var leftBtnTitle : String?
     var rightBtnTitle : String?
     
-    
+    @Environment(\.dismiss) var dismiss
+       
     
     var body: some View {
         
         
         HStack {
             
-            if let leftIcon = leftBtnIcon {
-                Image(leftIcon)
-                .resizable()
-                .frame(width: 40, height: 40)
-                .foregroundColor(.white)
-       
-            }
+                if let leftIcon = leftBtnIcon {
+                    Image(leftIcon)
+                        .resizable()
+                        .frame(width: 40, height: 40)
+                        .foregroundColor(.white)
+                    
+                }
             
-            if let leftBtnTitle = leftBtnTitle{
-                Text(leftBtnTitle)
-                    .font(.caption)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.white)
+            HStack {
+                if let leftBtnTitle = leftBtnTitle {
+                    
+                    Button(action: {
+                        dismiss()
+                        
+                        }) {
+                            Image(systemName: "chevron.left")
+                                .resizable()
+                                .frame(width: 10, height: 10)
+                                .foregroundColor(.white)
+                                    }
+                    
+                    Text(leftBtnTitle)
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.white)
+                }
+                
             }
         
                     Spacer()
@@ -66,7 +81,7 @@ struct TopBarView: View {
         }   .padding()
             .padding(.horizontal)
             .background(.clear)
-           // .background(Color.cyan)
+          //  .background(Color.cyan)
                        
     }
 }
