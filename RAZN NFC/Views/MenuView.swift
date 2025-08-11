@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct MenuView: View {
+    @StateObject var vm = MenuVM()
+    
     var body: some View {
         ZStack {
             Image("BG")
@@ -41,6 +43,10 @@ struct MenuView: View {
 
                 Spacer()
             }
+            .navigationBarBackButtonHidden(true)
+            .navigationDestination(isPresented: $vm.gotoHomeScreen, destination: {
+                HomeScreenView()
+            })
         }
     }
 }

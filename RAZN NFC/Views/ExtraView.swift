@@ -9,75 +9,110 @@ import SwiftUI
 
 struct ExtraView: View {
     
-        @State private var urlText: String = ""
-
-        var body: some View {
-            VStack(spacing: 16) {
+    
+    @State private var urlText = "www.example.it"
+    
+    var body: some View {
+        VStack(spacing: 0) {
+            // Top Bar
+            HStack {
+                Button("< back") { }
+                    .foregroundColor(.white)
                 
-                // Header with icon and title
-                HStack {
-                    Image(systemName: "link")
-                        .foregroundColor(.white)
-                    Text("URL/URI")
-                        .foregroundColor(.white)
-                        .font(.headline)
-                    Spacer()
-                }
-                .padding()
-                .background(Color.black)
+                Spacer()
                 
-                // Insert label
-                Text("insert l’URL")
-                    .font(.custom("AvenirNext-Bold", size: 20))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
+                Text("add field")
+                    .foregroundColor(.white)
+                    .font(.system(size: 14, weight: .medium))
                 
-                // TextField with "https://" and edit button
-                HStack(spacing: 0) {
-                    TextField("https://", text: $urlText)
-                        .padding()
-                        .background(Color.gray.opacity(0.2))
-                    
-                    Button(action: {
-                        print("Edit tapped")
-                    }) {
-                        Text("edit")
-                            .foregroundColor(.white)
-                            .frame(width: 60)
-                            .padding()
-                            .background(Color.gray)
-                    }
-                }
-                .cornerRadius(5)
-                .padding(.horizontal)
+                Spacer()
                 
-                // Rounded example URL with {...} button
-                HStack {
-                    Text("www.example.it")
-                        .foregroundColor(.gray)
-                        .padding(.horizontal)
-                        .frame(height: 40)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(Color.black, lineWidth: 1)
-                        )
-                    
-                    Button(action: {
-                        print("More tapped")
-                    }) {
-                        Text("{ ... }")
-                            .foregroundColor(.black)
-                            .padding(.horizontal, 8)
-                    }
-                }
-                .padding(.horizontal)
+                Button("OK") { }
+                    .foregroundColor(.white)
+            }
+            .padding()
+            .background(Color.black)
+            
+            // Header section
+            HStack(spacing: 10) {
+                Image(systemName: "link")
+                    .font(.system(size: 20))
+                    .foregroundColor(.white)
+                
+                Text("URL/URI")
+                    .foregroundColor(.white)
+                    .font(.system(size: 20, weight: .semibold))
                 
                 Spacer()
             }
+            .padding()
+            .background(Color.black.opacity(0.8))
+            
+            // Insert label
+            HStack {
+                Text("insert  l’URL")
+                    .font(.system(size: 18, weight: .medium))
+                    .padding(.horizontal)
+                Spacer()
+            }
+            .padding(.vertical, 10)
+            .background(Color.white)
+            
+            // HTTPS + Edit
+            HStack(spacing: 0) {
+                Text("https://")
+                    .padding()
+                    .background(Color.gray.opacity(0.2))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                
+                Button("edit") { }
+                    .foregroundColor(.white)
+                    .frame(width: 80)
+                    .padding(.vertical, 12)
+                    .background(Color.gray)
+            }
+            
+            
+            
+            
+            // URL box + curly bracket button
+            HStack(spacing: 8) {
+                TextField("", text: $urlText)
+                    .font(.system(size: 20, weight: .medium, design: .rounded))
+                    .kerning(5)
+                    .multilineTextAlignment(.center)
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 20)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 25)
+                            .stroke(Color.black, lineWidth: 1)
+                    )
+                
+                Button("{ ... }") { }
+                    .foregroundColor(.black)
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+            
+            
+            Spacer()
+            
+            
+            Spacer()
         }
+        .background(Color.white.edgesIgnoringSafeArea(.all))
+        
+      
+    }
+
+    
+    
+    
     }
 
 
+
+   
 #Preview {
     ExtraView()
 }
