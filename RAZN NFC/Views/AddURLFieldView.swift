@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct AddURLFieldView: View {
+    @State private var name: String = ""
+    
     var body: some View {
         ZStack {
             
@@ -23,7 +25,7 @@ struct AddURLFieldView: View {
                     )
                 )
             
-            VStack {
+            VStack (spacing: 0){
                 
                 TopBarView(mainTitle: "add fieled", leftBtnTitle: "back", rightBtnTitle: "OK")
                     .background(.black)
@@ -41,7 +43,48 @@ struct AddURLFieldView: View {
                     
                     Spacer()
                 }.padding(.leading)
+                    .background(.black.opacity(0.8))
+               // Spacer()
+                
+                
+                ZStack {
+                    Image("whiteBG")
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 400, height: 150)
+                    
+                    VStack {
+                        HStack() {
+                            Text("insert      I ' URL")
+                                .font(.subheadline)
+                                .fontWeight(.bold)
+                                .padding()
+                            Spacer()
+                        }
+                        
+                        TextField("Type here...", text: $name) // Bind text to state
+                            .textFieldStyle(RoundedBorderTextFieldStyle()) // Nice rounded look
+                            .padding()
+                        
+                        Image("urlIMG")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 400, height: 50)
+                           
+                        
+                    }
+                    
+                    
+                  
+                 //   .padding()
+                    
+                  
+                        
+                }
+                
                 Spacer()
+                
+                
             }
         }
     }
