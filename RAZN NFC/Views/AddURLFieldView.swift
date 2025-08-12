@@ -10,15 +10,17 @@ import SwiftUI
 struct AddURLFieldView: View {
   
     @State private var urlText: String = ""
+    @StateObject private var nfcReader = NFCReader()
     
     var body: some View {
         ZStack {
             
-            customBG
+            CustomBG()
             
             VStack (spacing: 0) {
                 
-                TopBarView(mainTitle: "add fieled", leftBtnTitle: "back", rightBtnTitle: "OK")
+                TopBarView(mainTitle: "add fieled",
+                           leftBtnTitle: "back", rightBtnTitle: "OK")
                     .background(.black)
                 
                 urlSection
@@ -30,6 +32,22 @@ struct AddURLFieldView: View {
         }
         .navigationBarBackButtonHidden(true)
     }
+    
+    private func scanTag() {
+        nfcReader.scan { payload in
+            print("U>> Scaned data \(payload)")
+        }
+        
+        
+    }
+    
+    private func writeTag(text : String) {
+        nfcReader.write(text, completion: { isSuccess in
+            print("U>> write isSuccess \(isSuccess)")
+        })
+        
+        
+    }
 }
 
 #Preview {
@@ -38,22 +56,7 @@ struct AddURLFieldView: View {
 
 extension AddURLFieldView {
     
-    var customBG: some View {
-        
-        Image("BG")
-            .resizable()
-            .scaledToFill()
-            .edgesIgnoringSafeArea(.all)
-            .overlay(
-                LinearGradient(
-                    gradient: Gradient(colors: [Color.black.opacity(0.0), Color.black.opacity(0.8)]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-    }
-    
-    
+   
     var urlSection: some View {
         HStack(spacing: 10) {
             Image("url_icon")
@@ -77,11 +80,13 @@ extension AddURLFieldView {
             
             HStack (spacing: 0) {
                 Text("insert")
-                    .font(.system(size: 15))
+                 //.font(.custom("AvenirNext-Bold", size: 20))
+                    .font(.custom(Constants.Fonts.cgoogla, size: 15))
                     .padding()
                 
                 Text("l ’ URL")
-                    .font(.custom("AvenirNext-Bold", size: 20))
+                   // .font(.custom("AvenirNext-Bold", size: 20))
+                    .font(.custom(Constants.Fonts.cgoogla, size: 20))
                     .frame(maxWidth: .infinity, alignment: .leading)
                 //  .padding(.horizontal)
                 
@@ -95,7 +100,15 @@ extension AddURLFieldView {
                     .background(Color.gray.opacity(0.6))
                 
                 Button(action: {
-                    print("Edit tapped")
+                    
+                    if isValidURL(urlText){
+                        print("Valid Url")
+                        writeTag(text: urlText)
+                    }else{
+                        print("inValid Url")
+                    }
+                    
+                    
                 }) {
                     Text("edit")
                         .foregroundColor(.white)
@@ -133,9 +146,9 @@ extension AddURLFieldView {
         }
             .background(.white.opacity(0.9))
             .padding(.horizontal)
-            
-            
-            
-        
+    }
+    
+    func isValidURL(_ urlString: String) -> Bool {
+        return urlString.lowercased().hasPrefix("https://") || urlString.lowercased().hasPrefix("www.")
     }
 }

@@ -12,8 +12,8 @@ struct AddFieledView: View {
     
     var body: some View {
         ZStack {
-            
-            customBG
+        
+            CustomBG()
             mainSection
            
             
@@ -30,22 +30,6 @@ struct AddFieledView: View {
 }
 
 extension AddFieledView {
-    
-    var customBG: some View {
-        
-        Image("BG")
-            .resizable()
-            .scaledToFill()
-            .edgesIgnoringSafeArea(.all)
-            .overlay(
-                LinearGradient(
-                    gradient: Gradient(colors: [Color.black.opacity(0.0), Color.black.opacity(0.8)]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
-        
-    }
     
     var mainSection: some View {
         VStack {

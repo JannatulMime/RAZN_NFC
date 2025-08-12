@@ -20,6 +20,7 @@ class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate {
     @Published var alertMessage : String = ""
     @Published var showAlert : Bool = false
 
+    
     func scan(completion: @escaping (String) -> Void) {
         onScanComplete = completion
         isWriting = false
