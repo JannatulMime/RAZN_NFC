@@ -10,17 +10,23 @@ import SwiftUI
 struct SplashScreenView: View {
     
     @State private var showSplash = true
-    @State private var splashOpacity = 1.0
+    @State private var splashOpacity = 0.0
 
     var body: some View {
         ZStack {
             if showSplash {
+                
+                Image("BG")
+                    .resizable()
+                    .scaledToFill()
+                    .edgesIgnoringSafeArea(.all)
+               
                 logoView
                     .opacity(splashOpacity)
                     .onAppear {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                             withAnimation(.easeOut(duration: 1.0)) {
-                                splashOpacity = 0
+                                splashOpacity = 1
                             }
 
                             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
@@ -42,7 +48,7 @@ struct SplashScreenView: View {
 extension SplashScreenView {
     var logoView: some View {
         ZStack {
-            Color.black.opacity(0.8)
+           // Color.black.opacity(0.8)
             VStack {
                 Image("razuAppIcon")
                     .resizable()
