@@ -8,9 +8,9 @@
 import SwiftUI
 
 struct AddURLFieldView: View {
-  
-    @State private var urlText: String = ""
-    @StateObject private var nfcReader = NFCReader()
+    
+    @EnvironmentObject var nfcWriteInfoVM : NFCWriteInfoVM
+    @Environment(\.dismiss) var dismiss
     
     var body: some View {
         ZStack {
@@ -33,25 +33,12 @@ struct AddURLFieldView: View {
         .navigationBarBackButtonHidden(true)
     }
     
-    private func scanTag() {
-        nfcReader.scan { payload in
-            print("U>> Scaned data \(payload)")
-        }
-        
-        
-    }
     
-    private func writeTag(text : String) {
-        nfcReader.write(text, completion: { isSuccess in
-            print("U>> write isSuccess \(isSuccess)")
-        })
-        
-        
-    }
 }
 
 #Preview {
     AddURLFieldView()
+        .environmentObject(NFCWriteInfoVM())
 }
 
 extension AddURLFieldView {
@@ -94,24 +81,22 @@ extension AddURLFieldView {
             
             
             HStack(spacing: 0) {
-                TextField("https://", text: $urlText)
+                TextField("https://", text: $nfcWriteInfoVM.insertedURLPrefix)
+                    .font(.custom(Constants.Fonts.cgoogla, size: 20))
                     .padding()
                     .frame(height: 50)
                     .background(Color.gray.opacity(0.6))
                 
                 Button(action: {
                     
-                    if isValidURL(urlText){
-                        print("Valid Url")
-                        writeTag(text: urlText)
-                    }else{
-                        print("inValid Url")
-                    }
                     
+                    
+                    dismiss()
                     
                 }) {
                     Text("edit")
                         .foregroundColor(.white)
+                        .font(.custom(Constants.Fonts.cgoogla, size: 20))
                         .frame(width: 60, height: 20)
                         .padding()
                         .background(Color.gray)
@@ -122,8 +107,9 @@ extension AddURLFieldView {
             
             // Rounded example URL with {...} button
             HStack {
-                Text("www.example.it")
-                    .font(.system(size: 20))
+                TextField("www.example.it", text: $nfcWriteInfoVM.insertedURL)
+                    .padding()
+                    .font(.custom(Constants.Fonts.cgoogla, size: 20))
                  
                     .tint(.gray)
                     .kerning(5)
@@ -148,7 +134,5 @@ extension AddURLFieldView {
             .padding(.horizontal)
     }
     
-    func isValidURL(_ urlString: String) -> Bool {
-        return urlString.lowercased().hasPrefix("https://") || urlString.lowercased().hasPrefix("www.")
-    }
+    
 }

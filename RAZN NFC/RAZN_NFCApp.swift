@@ -9,8 +9,7 @@ import SwiftUI
 
 @main
 struct RAZN_NFCApp: App {
-    
-    init(){
+    init() {
         for family in UIFont.familyNames {
             print("Family: \(family)")
             for name in UIFont.fontNames(forFamilyName: family) {
@@ -18,18 +17,15 @@ struct RAZN_NFCApp: App {
             }
         }
     }
-    
 
-    
-    
     var body: some Scene {
+        @StateObject var nfcWriteInfoVM : NFCWriteInfoVM = NFCWriteInfoVM()
+       
         WindowGroup {
-        
             SplashScreenView()
-               // HomeScreenView()
-                //            NFCReaderView()
-                
-        
+                .environmentObject(nfcWriteInfoVM)
+            // HomeScreenView()
+            //            NFCReaderView()
         }
     }
 }
