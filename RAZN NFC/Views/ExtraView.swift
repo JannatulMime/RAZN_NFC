@@ -7,42 +7,61 @@
 
 import SwiftUI
 
-
     struct ExtraView: View {
-        @Environment(\.dismiss) var dismiss
         
-        var body: some View {
-            VStack {
-                // Custom Back Button at top-left
-                HStack {
-                    Button(action: {
-                        dismiss() // Go back
-                    }) {
+    @State private var urlText = ""
+                    
+                    var body: some View {
                         HStack {
-                            Image(systemName: "chevron.left")
-                                .font(.title2)
-                            Text("Back")
-                                .font(.headline)
+                            TextField("www.example.it", text: $urlText)
+                                .font(.system(size: 20))
+                                .kerning(5)
+                                .foregroundStyle(.gray) // placeholder & typed text color
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 40)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 25)
+                                        .stroke(Color.black, lineWidth: 1)
+                                )
+                                .disableAutocorrection(true) // cleaner URL typing
+                                .textInputAutocapitalization(.never)
+                            
+                            Spacer()
+                            
+                            Text("{ ... }")
+                                .foregroundColor(.gray)
+                                .padding()
                         }
-                        .foregroundColor(.white)
+                        .padding(.horizontal)
                     }
-                    Spacer()
                 }
-                .padding()
-                
-                Spacer()
-                Text("Menu View")
-                    .foregroundColor(.white)
-                Spacer()
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.black.ignoresSafeArea())
-            .navigationBarBackButtonHidden(true)
-        }
-    }
+
+//
+//HStack {
+//    Text("www.example.it")
+//        .font(.system(size: 20))
+//     
+//        .tint(.gray)
+//        .kerning(5)
+//    
+//        .padding(.vertical, 8)
+//        .padding(.horizontal, 40)
+//        .overlay(
+//            RoundedRectangle(cornerRadius: 25)
+//                .stroke(Color.black, lineWidth: 1)
+//               
+//        )
+//    Spacer()
+//    
+//    
+//    Text("{ ... }")
+//        .foregroundColor(.gray)
+//        .padding()
+//    
+//}.padding(.horizontal)
+//
 
 
-   
 #Preview {
     ExtraView()
 }

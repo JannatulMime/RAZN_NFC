@@ -11,7 +11,7 @@ struct AddURLFieldView: View {
   
     @State private var urlText: String = ""
     @StateObject private var nfcReader = NFCReader()
-    
+
     var body: some View {
         ZStack {
             
@@ -122,27 +122,26 @@ extension AddURLFieldView {
             
             // Rounded example URL with {...} button
             HStack {
-                Text("www.example.it")
+                TextField("www.example.it", text: $urlText)
                     .font(.system(size: 20))
-                 
-                    .tint(.gray)
                     .kerning(5)
-                
+                    .foregroundStyle(.gray)
                     .padding(.vertical, 8)
                     .padding(.horizontal, 40)
                     .overlay(
                         RoundedRectangle(cornerRadius: 25)
                             .stroke(Color.black, lineWidth: 1)
-                           
                     )
-                Spacer()
+                    .disableAutocorrection(true) 
+                    .textInputAutocapitalization(.never)
                 
+                Spacer()
                 
                 Text("{ ... }")
                     .foregroundColor(.gray)
                     .padding()
-                
-            }.padding(.horizontal)
+            }
+            .padding(.horizontal)
         }
             .background(.white.opacity(0.9))
             .padding(.horizontal)
