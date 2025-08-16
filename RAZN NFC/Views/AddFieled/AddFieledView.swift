@@ -15,6 +15,7 @@ struct AddFieledView: View {
     var body: some View {
         ZStack {
             CustomBG()
+               
             mainSection
         }
         .navigationBarBackButtonHidden(true)
@@ -31,8 +32,9 @@ struct AddFieledView: View {
 
 extension AddFieledView {
     var mainSection: some View {
-        VStack {
-            TopBarView(mainTitle: "add fieled", leftBtnTitle: "Write")
+        VStack(spacing: 0) {
+            TopBarView(mainTitle: "add fieled", leftBtnTitle: "write")
+                .background(.black)
 
             Button(action: {
                 vm.gotoURLFieldView = true
@@ -59,8 +61,14 @@ extension AddFieledView {
 
                         Spacer()
                     }
+                   
 
-                }.frame(height: 120)
+                }
+                 
+                        //.padding(.vertical, 20)
+//                    .padding(.horizontal, 20)
+                
+                .frame(height: 120)
                     .frame(maxWidth: .infinity)
             }
 
