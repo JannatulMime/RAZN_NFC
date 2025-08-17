@@ -10,7 +10,7 @@ import SwiftUI
 struct AddURLFieldView: View {
     
     @EnvironmentObject var nfcWriteInfoVM : NFCWriteInfoVM
-    @Environment(\.dismiss) var dismiss
+    @State var goMenuView : Bool = false
     
     var body: some View {
         ZStack {
@@ -31,6 +31,9 @@ struct AddURLFieldView: View {
             }
         }
         .navigationBarBackButtonHidden(true)
+        .navigationDestination(isPresented: $goMenuView, destination: {
+            MenuView()
+        })
     }
     
     
@@ -88,10 +91,7 @@ extension AddURLFieldView {
                     .background(Color.gray.opacity(0.6))
                 
                 Button(action: {
-                    
-                    
-                    
-                    dismiss()
+                   goMenuView = true
                     
                 }) {
                     Text("edit")
