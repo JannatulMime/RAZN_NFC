@@ -62,6 +62,8 @@ extension MenuView {
         
         VStack {
             TopBarView(mainTitle: "write", leftBtnTitle: "Menu", rightBtnTitle: "edit")
+               // .padding(.horizontal)
+                .background(.black)
             
             Button(action: {
                 vm.gotoAddFieled = true

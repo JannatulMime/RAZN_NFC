@@ -7,59 +7,52 @@
 
 import SwiftUI
 
-    struct ExtraView: View {
+struct ExtraView: View {
+    
+    
+    var body: some View {
         
-    @State private var urlText = ""
+        
+        Button(action: {
+            //vm.gotoURLFieldView = true
+        }) {
+            ZStack {
+                Image("glassBG")
+                    .resizable()
+                    .scaledToFill()
+                    .clipped()
+                
+                HStack(spacing: 16) {
+                    // Icon
+                    Image("url_icon")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 40, height: 40) // balanced size
+                        .foregroundColor(.white)
                     
-                    var body: some View {
-                        HStack {
-                            TextField("www.example.it", text: $urlText)
-                                .font(.system(size: 20))
-                                .kerning(5)
-                                .foregroundStyle(.gray) // placeholder & typed text color
-                                .padding(.vertical, 8)
-                                .padding(.horizontal, 40)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 25)
-                                        .stroke(Color.black, lineWidth: 1)
-                                )
-                                .disableAutocorrection(true) // cleaner URL typing
-                                .textInputAutocapitalization(.never)
-                            
-                            Spacer()
-                            
-                            Text("{ ... }")
-                                .foregroundColor(.gray)
-                                .padding()
-                        }
-                        .padding(.horizontal)
+                    // Title + Subtitle
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("URL/URI")
+                            .font(.custom(Constants.Fonts.cgoogla, size: 22))
+                            .foregroundColor(.white)
+                            .fontWeight(.bold)
+                        
+                        Text("add field URL")
+                            .font(.custom(Constants.Fonts.cgoogla, size: 16))
+                            .foregroundColor(.white.opacity(0.8))
                     }
+                    
+                    Spacer()
                 }
-
-//
-//HStack {
-//    Text("www.example.it")
-//        .font(.system(size: 20))
-//     
-//        .tint(.gray)
-//        .kerning(5)
-//    
-//        .padding(.vertical, 8)
-//        .padding(.horizontal, 40)
-//        .overlay(
-//            RoundedRectangle(cornerRadius: 25)
-//                .stroke(Color.black, lineWidth: 1)
-//               
-//        )
-//    Spacer()
-//    
-//    
-//    Text("{ ... }")
-//        .foregroundColor(.gray)
-//        .padding()
-//    
-//}.padding(.horizontal)
-//
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+            }
+            .frame(maxWidth: .infinity) // full width
+            .cornerRadius(12)
+        }
+        
+    }
+}
 
 
 #Preview {

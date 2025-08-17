@@ -22,10 +22,11 @@ struct AddURLFieldView: View {
                 TopBarView(mainTitle: "add fieled",
                            leftBtnTitle: "back", rightBtnTitle: "OK")
                     .background(.black)
+              
                 
                 urlSection
                 textfieldAndButtton
-               
+                   
                 Spacer()
                
             }
@@ -48,90 +49,91 @@ extension AddURLFieldView {
     
    
     var urlSection: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 0) {
             Image("url_icon")
                 .resizable()
                 .frame(width: 80, height: 80)
                 .foregroundColor(.white)
             
             Text("URL/URI")
-                .foregroundColor(.white)
+                .foregroundStyle(.white)
                 .font(.system(size: 20, weight: .semibold))
             
             Spacer()
         }
+       
+        .padding(.leading)
         .padding(.horizontal)
-        .background(Color.black.opacity(0.6))
+        .background(Color.black.opacity(0.7))
         
     }
     
     var textfieldAndButtton: some View {
         VStack {
             
-            HStack (spacing: 0) {
+            HStack (spacing: 10) {
                 Text("insert")
-                 //.font(.custom("AvenirNext-Bold", size: 20))
                     .font(.custom(Constants.Fonts.cgoogla, size: 15))
-                    .padding()
+                    .kerning(3)
+                   // .padding()
+                    .padding(.leading)
                 
                 Text("l ’ URL")
-                   // .font(.custom("AvenirNext-Bold", size: 20))
                     .font(.custom(Constants.Fonts.cgoogla, size: 20))
                     .frame(maxWidth: .infinity, alignment: .leading)
                 //  .padding(.horizontal)
                 
-            }
+            }.padding()
             
             
             HStack(spacing: 0) {
                 TextField("https://", text: $nfcWriteInfoVM.insertedURLPrefix)
-                    .font(.custom(Constants.Fonts.cgoogla, size: 20))
-                    .padding()
-                    .frame(height: 50)
-                    .background(Color.gray.opacity(0.6))
-                
+                    .font(.custom(Constants.Fonts.cgoogla, size: 18))
+                   // .padding()
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 20)
+                    .background(Color.lightGray)
+                   
                 Button(action: {
                    goMenuView = true
                     
                 }) {
                     Text("edit")
                         .foregroundColor(.white)
-                        .font(.custom(Constants.Fonts.cgoogla, size: 20))
-                        .frame(width: 60, height: 20)
-                        .padding()
-                        .background(Color.gray)
+                        .font(.custom(Constants.Fonts.cgoogla, size: 15))
+                        .padding(.vertical, 12)
+                        .padding(.horizontal, 40)
+                        .background(Color.darkGray)
                 }
             }
             .cornerRadius(5)
-            // .padding(.horizontal)
+          
             
             // Rounded example URL with {...} button
             HStack {
-                TextField("www.example.it", text: $nfcWriteInfoVM.insertedURL)
-                    .padding()
+                TextField("www.razn.it", text: $nfcWriteInfoVM.insertedURL)
                     .font(.custom(Constants.Fonts.cgoogla, size: 20))
-                 
-                    .tint(.gray)
-                    .kerning(5)
-                
+                    .kerning(3)
+                   // .accentColor(.gray)
+                    .foregroundStyle(.gray)
                     .padding(.vertical, 8)
-                    .padding(.horizontal, 40)
+                    .padding(.horizontal, 25)
+                    .multilineTextAlignment(.center)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 25)
+                        RoundedRectangle(cornerRadius: 20)
                             .stroke(Color.black, lineWidth: 1)
-                           
                     )
                 Spacer()
                 
                 
                 Text("{ ... }")
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.gray)
                     .padding()
                 
             }.padding(.horizontal)
         }
             .background(.white.opacity(0.9))
-            .padding(.horizontal)
+            .padding()
     }
     
     
