@@ -35,29 +35,20 @@ extension HomeScreenView {
 
             Spacer()
 
-            // Logo
-            ZStack {
-                Circle()
-                    .stroke(Color.white, lineWidth: 2)
-                    .frame(width: 160, height: 160)
+            
+            Image("razuAppIcon")
+                .resizable()
+                .frame(width: 300, height: 300)
+                .offset(y: -70)
 
-                //  Text("razn")
-                Image("razuAppIcon")
-                    .resizable()
-                    .frame(width: 150, height: 150)
-            }
-
-            Spacer()
+           
 
             VStack(spacing: 0) {
-//                Image("welcomeImgDesign")
-//                    .resizable()
-//                    .frame(width: 350, height: 200)
 
                 Text("WELCOME")
-                    .font(.custom(Constants.Fonts.cgoogla, size: 50))
+                    .font(.custom(Constants.Fonts.cgoogla, size: 40))
                     .foregroundStyle(.white)
-                    .kerning(2)
+                    .kerning(4)
 
                 Rectangle()
                     .fill(.white)
@@ -71,6 +62,7 @@ extension HomeScreenView {
                     .kerning(6)
                     .padding()
             }
+            .offset(y: 20)
 
             Spacer()
 
@@ -83,10 +75,11 @@ extension HomeScreenView {
                         .resizable()
                         .frame(width: 300, height: 80)
 
-                    Text("W  R  I  T  E")
+                    Text("WRITE")
                         .font(.custom(Constants.Fonts.cgoogla, size: 20))
                         .foregroundStyle(.white.opacity(0.8))
                         .offset(y: 5)
+                        .kerning(10)
                 }
             }
 
