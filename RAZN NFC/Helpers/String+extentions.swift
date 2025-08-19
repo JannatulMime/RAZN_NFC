@@ -19,7 +19,7 @@ extension String {
     }
     
     func getBytesString() -> String {
-        return "\(self.getBytes()) bytes"
+        return "\(self.getBytes()) BYTES"
     }
     
     

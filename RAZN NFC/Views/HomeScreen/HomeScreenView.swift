@@ -13,7 +13,6 @@ struct HomeScreenView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-              
                 CustomBG()
                 mainSection
 
@@ -50,52 +49,44 @@ extension HomeScreenView {
 
             Spacer()
 
-          
             VStack(spacing: 0) {
 //                Image("welcomeImgDesign")
 //                    .resizable()
 //                    .frame(width: 350, height: 200)
-                
+
                 Text("WELCOME")
                     .font(.custom(Constants.Fonts.cgoogla, size: 50))
                     .foregroundStyle(.white)
                     .kerning(2)
-                
+
                 Rectangle()
                     .fill(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 2)
                     .padding(.horizontal, 50)
-                 
-                
+
                 Text("IN  razn  NFC  Tools")
                     .font(.custom(Constants.Fonts.cgoogla, size: 20))
                     .foregroundStyle(.white)
                     .kerning(6)
                     .padding()
-                    
-                
-                
             }
 
-              Spacer()
+            Spacer()
 
-           
             Button(action: {
                 vm.gotoWriteView = true
 
             }) {
-                
                 ZStack {
                     Image("glass_capsule")
                         .resizable()
                         .frame(width: 300, height: 80)
-                    
-                    Text("WRITE")
-                        .font(.custom(Constants.Fonts.cgoogla, size: 25))
-                        .foregroundStyle(.white)
-                        .kerning(10)
-                    
+
+                    Text("W  R  I  T  E")
+                        .font(.custom(Constants.Fonts.cgoogla, size: 20))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .offset(y: 5)
                 }
             }
 

@@ -17,7 +17,7 @@ struct MenuView: View {
 
             CustomBG()
             mainSection
-            
+          
             .navigationBarBackButtonHidden(true)
             .navigationDestination(isPresented: $vm.gotoAddFieled, destination: {
                 AddFieledView()
@@ -62,35 +62,74 @@ extension MenuView {
         
         VStack {
             TopBarView(mainTitle: "write", leftBtnTitle: "Menu", rightBtnTitle: "edit")
-               // .padding(.horizontal)
-                .background(.black)
+              //  .background(.black)
             
-            Button(action: {
-                vm.gotoAddFieled = true
+            VStack{
                 
-            }) {
-                Image("addFieldButton")
-                    .resizable()
-                    .frame(width: 350, height: 90)
-            }
-            
-            Button(action: {
-                writeTag(text: nfcWriteInfoVM.getfullURL())
-            }) {
-                ZStack{
-                    Image("writeButton")
-                        .resizable()
-                        .frame(width: 350, height: 90)
+                Button(action: {
+                    vm.gotoAddFieled = true
                     
-                    HStack{
-                        Text(nfcWriteInfoVM.getfullURL().getBytesString())
-                            .font(.custom(Constants.Fonts.cgoogla, size: 20))
-                            .foregroundStyle(Color.white)
+                }) {
+                    
+                    ZStack {
+                        Image("glass_capsule")
+                            .resizable()
+                            .frame( height: 80)
+
+                        HStack{
+                            Image(systemName: "plus.circle")
+                                .resizable()
+                                .frame(width: 30, height: 30)
+                                .foregroundStyle(.white)
+                                .padding(.leading,30)
+                            
+                            Spacer()
+                           
+                                
+                            Text("ADD FIELD")
+                                .font(.custom(Constants.Fonts.cgoogla, size: 20))
+                                .foregroundStyle(.white.opacity(0.8))
+                                .offset(x: -30,y: 2)
+                            Spacer()
+                            
+                        }
                     }
-                   
                 }
                 
+                Button(action: {
+                    writeTag(text: nfcWriteInfoVM.getfullURL())
+                }) {
+                    ZStack {
+                        Image("glass_capsule")
+                            .resizable()
+                            .frame( height: 80)
+
+                        HStack{
+                            Image(systemName: "person.wave.2")
+                                .resizable()
+                                .frame(width: 30, height: 30)
+                                .foregroundStyle(.white)
+                                .padding(.leading,30)
+                            
+                            Spacer()
+                           
+                                
+                            Text("WRITE / " + nfcWriteInfoVM.getfullURL().getBytesString())
+                                .font(.custom(Constants.Fonts.cgoogla, size: 20))
+                                .foregroundStyle(.white.opacity(0.8))
+                                .offset(x: -30,y: 2)
+                            Spacer()
+                            
+                        }
+                    }
+                    
+                }
             }
+            .padding(.horizontal,50)
+            
+            
+            
+           
             
             Spacer()
         }
