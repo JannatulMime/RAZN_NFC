@@ -12,17 +12,17 @@ struct MenuView: View {
     @EnvironmentObject var nfcWriteInfoVM : NFCWriteInfoVM
     @StateObject private var nfcReader = NFCReader()
     
+    @Binding var path: [Screens]
+    
     var body: some View {
         ZStack {
 
             CustomBG()
             mainSection
-          
-            .navigationBarBackButtonHidden(true)
-            .navigationDestination(isPresented: $vm.gotoAddFieled, destination: {
-                AddFieledView()
-            })
-        }
+           
+            
+            
+        } .navigationBarBackButtonHidden(true)
     }
     
     private func scanTag() {
@@ -47,10 +47,18 @@ struct MenuView: View {
         })
  
     }
+    
+    func getWriteBytesText() -> String {
+        if nfcWriteInfoVM.isUrlInserted() {
+            return "WRITE"
+        }
+        
+       return "WRITE / " + nfcWriteInfoVM.getfullURL().getBytesString()
+    }
 }
 
 #Preview {
-    MenuView()
+    MenuView(path: .constant([]))
         .environmentObject(NFCWriteInfoVM())
 }
 
@@ -67,7 +75,8 @@ extension MenuView {
             VStack{
                 
                 Button(action: {
-                    vm.gotoAddFieled = true
+                   // vm.gotoAddFieled = true
+                    path.append(.AddField)
                     
                 }) {
                     
@@ -114,7 +123,7 @@ extension MenuView {
                             Spacer()
                            
                                 
-                            Text("WRITE / " + nfcWriteInfoVM.getfullURL().getBytesString())
+                            Text(getWriteBytesText())
                                 .font(.custom(Constants.Fonts.cgoogla, size: 20))
                                 .foregroundStyle(.white.opacity(0.8))
                                 .offset(x: -30,y: 2)
@@ -124,11 +133,17 @@ extension MenuView {
                     }
                     
                 }
+                
+               
             }
             .padding(.horizontal,50)
             
-            
-            
+            if nfcWriteInfoVM.isUrlInserted() == false {
+                URLFieldButtonView()
+                    .frame(height: 100)
+                    .padding(.horizontal,20)
+            }
+           
            
             
             Spacer()

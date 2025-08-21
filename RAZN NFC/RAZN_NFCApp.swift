@@ -24,8 +24,7 @@ struct RAZN_NFCApp: App {
         WindowGroup {
             SplashScreenView()
                 .environmentObject(nfcWriteInfoVM)
-            // HomeScreenView()
-            //            NFCReaderView()
+           // ContentView()
         }
     }
 }

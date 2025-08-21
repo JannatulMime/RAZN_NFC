@@ -12,6 +12,7 @@ class NFCWriteInfoVM : ObservableObject{
     @Published var insertedURLPrefix: String = "https://"
 
     func getfullURL() -> String {
+        
         let lowercased = insertedURL.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
 
         // If it already starts with http, https, or www → return as-is
@@ -23,6 +24,10 @@ class NFCWriteInfoVM : ObservableObject{
 
         // Otherwise → add the default prefix
         return insertedURLPrefix + insertedURL
+    }
+    
+    func isUrlInserted() -> Bool {
+        return insertedURL.isEmpty
     }
 
 }
