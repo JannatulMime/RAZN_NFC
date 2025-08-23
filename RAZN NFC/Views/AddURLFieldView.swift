@@ -11,13 +11,13 @@ struct AddURLFieldView: View {
     @EnvironmentObject var nfcWriteInfoVM: NFCWriteInfoVM
     @State var goMenuView: Bool = false
     @Binding var path: [Screens]
-  
+
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
                 TopBarView(mainTitle: "add fieled",
                            leftBtnTitle: "back", rightBtnTitle: "OK")
-             
+
                 urlSection
 
                 textfieldAndButtton
@@ -39,12 +39,8 @@ struct AddURLFieldView: View {
 }
 
 extension AddURLFieldView {
-    
-    
     var urlSection: some View {
-        
-        VStack{
-            
+        VStack {
             HStack(spacing: 0) {
                 Image("url_icon")
                     .resizable()
@@ -59,8 +55,6 @@ extension AddURLFieldView {
             }
             .background(Color.black.opacity(0.7))
         }
-        
-       
     }
 
     var textfieldAndButtton: some View {
@@ -111,10 +105,10 @@ extension AddURLFieldView {
                         prompt: Text(verbatim: "www.razn.it").foregroundColor(.gray)
                     )
                     .font(.system(size: 20))
-                  
                     .foregroundStyle(.gray)
                     .padding(.vertical, 8)
-                    .padding(.horizontal, 25)
+                    .padding(.horizontal, 20) // base horizontal padding
+                    .padding(.trailing, 32) // extra room so text doesn't sit under the X
                     .multilineTextAlignment(.leading)
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
@@ -122,6 +116,25 @@ extension AddURLFieldView {
                     )
                     .tint(.gray)
                     .lineLimit(1)
+                    .autocorrectionDisabled(true)
+                    .textInputAutocapitalization(.never)
+                    // Clear (×) button on the right, visible only when there's text
+                    .overlay(alignment: .trailing) {
+                        if !nfcWriteInfoVM.insertedURL.isEmpty {
+                            Button {
+                                nfcWriteInfoVM.insertedURL = ""
+                            } label: {
+                                Image(systemName: "xmark.circle.fill")
+                                    .imageScale(.medium)
+                                    .foregroundStyle(.secondary)
+                                    .padding(.trailing, 8)
+                                    .tint(Color.black)
+                            }
+                            .accessibilityLabel("Clear text")
+                            .transition(.scale.combined(with: .opacity))
+                        }
+                    }
+                    .animation(.default, value: nfcWriteInfoVM.insertedURL.isEmpty)
                 }
 
                 Spacer()
@@ -131,6 +144,35 @@ extension AddURLFieldView {
                     .padding()
             }
             .padding(.horizontal)
+
+//            HStack {
+//                ZStack(alignment: .center) {
+//                    TextField(
+//                        "",
+//                        text: $nfcWriteInfoVM.insertedURL,
+//                        prompt: Text(verbatim: "www.razn.it").foregroundColor(.gray)
+//                    )
+//                    .font(.system(size: 20))
+//
+//                    .foregroundStyle(.gray)
+//                    .padding(.vertical, 8)
+//                    .padding(.horizontal, 25)
+//                    .multilineTextAlignment(.leading)
+//                    .overlay(
+//                        RoundedRectangle(cornerRadius: 20)
+//                            .stroke(Color.black, lineWidth: 1)
+//                    )
+//                    .tint(.gray)
+//                    .lineLimit(1)
+//                }
+//
+//                Spacer()
+//
+//                Text("{ ... }")
+//                    .foregroundStyle(.gray)
+//                    .padding()
+//            }
+//            .padding(.horizontal)
         }
         .background(.white.opacity(0.9))
     }

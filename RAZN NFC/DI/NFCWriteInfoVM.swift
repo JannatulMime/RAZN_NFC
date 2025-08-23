@@ -27,7 +27,7 @@ class NFCWriteInfoVM : ObservableObject{
     }
     
     func isUrlInserted() -> Bool {
-        return insertedURL.isEmpty
+        return !insertedURL.isEmpty
     }
 
 }

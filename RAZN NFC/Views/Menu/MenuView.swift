@@ -7,12 +7,14 @@
 
 import SwiftUI
 
+
 struct MenuView: View {
     @StateObject var vm = MenuVM()
     @EnvironmentObject var nfcWriteInfoVM : NFCWriteInfoVM
     @StateObject private var nfcReader = NFCReader()
     
     @Binding var path: [Screens]
+    @State private var showAlert = false
     
     var body: some View {
         ZStack {
@@ -20,6 +22,12 @@ struct MenuView: View {
             
         }.background {
             CustomBG()
+        }
+        .alert("Alert",
+               isPresented: $showAlert) {
+            Button("Close", role: .cancel) { }
+        } message: {
+            Text("Please add a valid link!")
         }
         .navigationBarBackButtonHidden(true)
     }
@@ -33,6 +41,7 @@ struct MenuView: View {
     }
     
     private func writeTag(text : String) {
+    
         nfcReader.write(text, completion: { isSuccess in
             print("U>> write isSuccess \(isSuccess)")
             
@@ -48,7 +57,7 @@ struct MenuView: View {
     }
     
     func getWriteBytesText() -> String {
-        if nfcWriteInfoVM.isUrlInserted() {
+        if nfcWriteInfoVM.isUrlInserted() == false {
             return "WRITE"
         }
         
@@ -105,7 +114,14 @@ extension MenuView {
                 }
                 
                 Button(action: {
-                    writeTag(text: nfcWriteInfoVM.getfullURL())
+                    
+                    if nfcWriteInfoVM.isUrlInserted() == false {
+                        showAlert = true
+                    }else{
+                        writeTag(text: nfcWriteInfoVM.getfullURL())
+                    }
+                    
+                   
                 }) {
                     ZStack {
                         Image("glass_capsule")
@@ -135,12 +151,12 @@ extension MenuView {
                 
                
             }
-            .padding(.horizontal,50)
+            .padding(.horizontal,30)
             
-            if nfcWriteInfoVM.isUrlInserted() == false {
+            if nfcWriteInfoVM.isUrlInserted(){
                 URLFieldButtonView()
                     .frame(height: 100)
-                    .padding(.horizontal,20)
+                   // .padding(.horizontal,20)
             }
            
            
