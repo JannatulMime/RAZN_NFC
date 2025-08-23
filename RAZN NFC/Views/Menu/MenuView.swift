@@ -23,11 +23,11 @@ struct MenuView: View {
         }.background {
             CustomBG()
         }
-        .alert("Alert",
+        .alert("Oops!",
                isPresented: $showAlert) {
-            Button("Close", role: .cancel) { }
+            Button("ok", role: .cancel) { }
         } message: {
-            Text("Please add a valid link!")
+            Text("You need to insert a valid link.")
         }
         .navigationBarBackButtonHidden(true)
     }
