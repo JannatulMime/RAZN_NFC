@@ -15,6 +15,8 @@ struct TopBarView: View {
 
     var leftBtnTitle: String?
     var rightBtnTitle: String?
+    
+    var rightBtnAction: (() -> Void)?
 
     @Environment(\.dismiss) var dismiss
 
@@ -58,7 +60,12 @@ struct TopBarView: View {
                 if let rightIcon = rightBtnIcon {
                     
                     Button(action: {
-                        dismiss()
+                        if let rightBtnAction = rightBtnAction {
+                            rightBtnAction()
+                        }else{
+                            dismiss()
+                        }
+                      
                     }) {
                         Image(rightIcon)
                             .resizable()
@@ -76,20 +83,14 @@ struct TopBarView: View {
                 }
             }
             .padding()
-            .padding(.horizontal)
-            //.background(Color.cyan)
+            .background(Color.clear)
             .background(.clear)
-          
-
-         
             Text(mainTitle)
                 .font(.custom(Constants.Fonts.cgoogla, size: 15))
                 .foregroundStyle(.white)
                 .fontWeight(.bold)
                 .kerning(2)
         }
-        
-        .padding(.horizontal)
         
     }
 }

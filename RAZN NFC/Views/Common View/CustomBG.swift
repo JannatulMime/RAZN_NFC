@@ -13,7 +13,6 @@ struct CustomBG: View {
    
     var body: some View {
         
-       
         
         Image("BG")
             .resizable()

@@ -22,9 +22,9 @@ struct RAZN_NFCApp: App {
         @StateObject var nfcWriteInfoVM : NFCWriteInfoVM = NFCWriteInfoVM()
        
         WindowGroup {
-            SplashScreenView()
+            RootView()
                 .environmentObject(nfcWriteInfoVM)
-           // ContentView()
+            //ContentView()
         }
     }
 }

@@ -14,10 +14,11 @@ struct AddFieledView: View {
 
     var body: some View {
         ZStack {
-            CustomBG()
-
             mainSection
+        }.background {
+            CustomBG()
         }
+         
         .navigationBarBackButtonHidden(true)
     }
 }

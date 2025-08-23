@@ -16,13 +16,12 @@ struct MenuView: View {
     
     var body: some View {
         ZStack {
-
-            CustomBG()
             mainSection
-           
             
-            
-        } .navigationBarBackButtonHidden(true)
+        }.background {
+            CustomBG()
+        }
+        .navigationBarBackButtonHidden(true)
     }
     
     private func scanTag() {

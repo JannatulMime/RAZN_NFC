@@ -11,15 +11,13 @@ struct AddURLFieldView: View {
     @EnvironmentObject var nfcWriteInfoVM: NFCWriteInfoVM
     @State var goMenuView: Bool = false
     @Binding var path: [Screens]
+  
     var body: some View {
         ZStack {
-            CustomBG()
-
             VStack(spacing: 0) {
                 TopBarView(mainTitle: "add fieled",
                            leftBtnTitle: "back", rightBtnTitle: "OK")
-                // .background(Color(hex: "#292929"))
-
+             
                 urlSection
 
                 textfieldAndButtton
@@ -27,7 +25,11 @@ struct AddURLFieldView: View {
                 Spacer()
             }
         }
+        .background {
+            CustomBG()
+        }
         .navigationBarBackButtonHidden(true)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 }
 
@@ -37,23 +39,28 @@ struct AddURLFieldView: View {
 }
 
 extension AddURLFieldView {
+    
+    
     var urlSection: some View {
-        HStack(spacing: 0) {
-            Image("url_icon")
-                .resizable()
-                .frame(width: 80, height: 80)
-                .foregroundColor(.white)
+        
+        VStack{
+            
+            HStack(spacing: 0) {
+                Image("url_icon")
+                    .resizable()
+                    .frame(width: 80, height: 80)
+                    .foregroundColor(.white)
 
-            Text("URL/URI")
-                .foregroundStyle(.white)
-                .font(.custom(Constants.Fonts.cgoogla, size: 20))
+                Text("URL/URI")
+                    .foregroundStyle(.white)
+                    .font(.custom(Constants.Fonts.cgoogla, size: 20))
 
-            Spacer()
+                Spacer()
+            }
+            .background(Color.black.opacity(0.7))
         }
-
-        .padding(.leading)
-        .padding(.horizontal)
-        .background(Color.black.opacity(0.7))
+        
+       
     }
 
     var textfieldAndButtton: some View {
@@ -79,6 +86,7 @@ extension AddURLFieldView {
                     .padding(.horizontal, 20)
                     .background(Color.lightGray)
                     .lineLimit(1)
+                    .disabled(true)
 
                 Button(action: {
                     path = [.Menu]
@@ -102,8 +110,8 @@ extension AddURLFieldView {
                         text: $nfcWriteInfoVM.insertedURL,
                         prompt: Text(verbatim: "www.razn.it").foregroundColor(.gray)
                     )
-                    .font(.custom(Constants.Fonts.cgoogla, size: 20))
-                    .kerning(3)
+                    .font(.system(size: 20))
+                  
                     .foregroundStyle(.gray)
                     .padding(.vertical, 8)
                     .padding(.horizontal, 25)
@@ -125,6 +133,5 @@ extension AddURLFieldView {
             .padding(.horizontal)
         }
         .background(.white.opacity(0.9))
-        .padding(.horizontal)
     }
 }

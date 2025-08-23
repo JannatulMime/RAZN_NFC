@@ -26,21 +26,37 @@ struct RootView: View {
                 case .AddUrl: AddURLFieldView(path: $path)
                 }
             }
-        }
+        } 
 
     }
+    
+    
 }
 
 struct HomeScreenView: View {
+    
     @StateObject var vm = HomeScreenVM()
     @Binding var path: [Screens]
   
+    @State private var showShare = false
+   
     
     var body: some View {
         ZStack {
-            CustomBG()
             mainSection
         }
+        .background{
+            CustomBG()
+        }.sheet(isPresented: $showShare) {
+            ShareActivityView(
+                activityItems: [Constants.getAppLink(), "Check this link!"],
+                excludedActivityTypes: [.assignToContact, .print],
+                onComplete: { completed in
+                   // print("Shared:", completed)
+                }
+            )
+        }
+
     }
 }
 
@@ -51,7 +67,10 @@ struct HomeScreenView: View {
 extension HomeScreenView {
     var mainSection: some View {
         VStack {
-            TopBarView(leftBtnIcon: "settingIcon", rightBtnIcon: "shareIcon", mainTitle: "NFC TOOLS")
+            TopBarView(leftBtnIcon: "settingIcon", rightBtnIcon: "shareIcon", mainTitle: "NFC TOOLS", rightBtnAction: {
+                print("U>> pressed right -- ")
+                showShare = true
+            })
 
             Spacer()
 
@@ -60,8 +79,6 @@ extension HomeScreenView {
                 .resizable()
                 .frame(width: 300, height: 300)
                 .offset(y: -70)
-
-           
 
             VStack(spacing: 0) {
 
@@ -82,7 +99,7 @@ extension HomeScreenView {
                     .kerning(6)
                     .padding()
             }
-            .offset(y: 20)
+            .offset(y: -10)
 
             Spacer()
 
