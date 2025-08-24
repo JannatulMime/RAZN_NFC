@@ -26,6 +26,18 @@ class NFCWriteInfoVM : ObservableObject{
         return insertedURLPrefix + insertedURL
     }
     
+    func getInsertedURLS() -> [String]{
+        if isUrlInserted() == false {
+            return []
+        }
+        
+        return [getfullURL()]
+    }
+    
+    func removeInsertedURL() {
+        insertedURL = ""
+    }
+    
     func isUrlInserted() -> Bool {
         return !insertedURL.isEmpty
     }

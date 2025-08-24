@@ -9,11 +9,10 @@ import SwiftUI
 
 struct URLFieldButtonView: View {
     @EnvironmentObject var nfcWriteInfoVM: NFCWriteInfoVM
+    var hasGlassBG : Bool = false
+    
     var body: some View {
         ZStack {
-            Image("glassBG")
-                .resizable()
-            // .scaledToFill()
             HStack {
                 Image("url_icon")
                     .resizable()
@@ -34,8 +33,18 @@ struct URLFieldButtonView: View {
 
                 Spacer()
             }
+            .background {
+                if hasGlassBG {
+                    Image("glassBG")
+                        .resizable()
+                        .scaledToFill()
+                }else{
+                    Color.white.opacity(0.1)
+                }
+
+               
+            }
         }
-      
     }
 }
 

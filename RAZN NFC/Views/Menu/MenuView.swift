@@ -15,7 +15,7 @@ struct MenuView: View {
     @Binding var path: [Screens]
     @State private var showAlert = false
 
-    @State private var items = ["Alpha", "Beta", "Gamma", "Delta"]
+    @State private var items = ["Alpha"]
 
     var body: some View {
         ZStack {
@@ -138,11 +138,14 @@ extension MenuView {
             }
             .padding(.horizontal, 30)
 
-            if nfcWriteInfoVM.isUrlInserted() {
-                URLFieldButtonView()
-                    .frame(height: 100)
-                // .padding(.horizontal,20)
-            }
+//            if nfcWriteInfoVM.isUrlInserted() {
+//                
+//                
+//                
+//                URLFieldButtonView()
+//                    .frame(height: 100)
+//                // .padding(.horizontal,20)
+//            }
 
             listView
 
@@ -152,9 +155,9 @@ extension MenuView {
 
     var listView: some View {
         List {
-            ForEach(items.indices, id: \.self) { i in
+            ForEach(nfcWriteInfoVM.getInsertedURLS().indices, id: \.self) { i in
                 HStack {
-                    URLFieldButtonView()
+                    URLFieldButtonView(hasGlassBG: false)
                 }
                 .contentShape(Rectangle()) // keep full-row tap/swipe area
                    
@@ -165,16 +168,18 @@ extension MenuView {
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     Button(role: .destructive) {
                         //  deleteItem(at: i)
+                        nfcWriteInfoVM.removeInsertedURL()
                     } label: {
                         Label("Delete", systemImage: "trash")
-                    }
+                    }.padding(10)
 
                     Button {
                         // startEdit(i)
+                        path.append(.AddUrl)
                     } label: {
                         Label("Edit", systemImage: "pencil")
                     }
-                    .tint(.blue)
+                    .tint(.clear)
                 }
             }
             
