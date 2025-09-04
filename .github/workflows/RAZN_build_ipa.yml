@@ -61,7 +61,7 @@ jobs:
           xcodebuild -scheme "RAZNNFC" \
           -archivePath $RUNNER_TEMP/RAZNNFC.xcarchive \
           -sdk iphoneos \
-          -configuration Debug \
+          -configuration app-store \
           -destination generic/platform=iOS \
           clean archive
 
