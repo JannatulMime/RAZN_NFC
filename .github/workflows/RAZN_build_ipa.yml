@@ -1,19 +1,19 @@
 name: "Build RAZN NFC app"
 
-# on:
-#   push:
-#     branches: ['**']
-#   pull_request:
-#     branches: ['**']
-
-
-
-
 on:
-  # manual trigger but change to any supported event
-  # see addl: https://www.andrewhoog.com/post/how-to-build-react-native-android-app-with-github-actions/#3-run-build-workflow
-  workflow_dispatch:
-    branches: [CI/githubAction]
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+
+
+
+# on:
+#   # manual trigger but change to any supported event
+#   # see addl: https://www.andrewhoog.com/post/how-to-build-react-native-android-app-with-github-actions/#3-run-build-workflow
+#   workflow_dispatch:
+#     branches: [CI/githubAction]
 
 jobs:
   build_with_signing:
