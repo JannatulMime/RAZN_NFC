@@ -1,0 +1,25 @@
+name: Build IPA
+
+on:
+  push:
+    branches: ['**']       # any branch
+  pull_request:
+    branches: ['**']       # PRs to any branch
+  workflow_dispatch:        # manual run
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_14.2.app
+
+    - name: Install fastlane
+      run: bundle install
+
+    - name: Build IPA
+      run: bundle exec fastlane build_release

@@ -7,7 +7,8 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		F32C47B42E44E9B200869305 /* RAZN NFC.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RAZN NFC.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		96BC36252E69C99500774470 /* RAZNNFC copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "RAZNNFC copy-Info.plist"; path = "/Users/habibur_periscope/Documents/Projects/iOS/Clients/RAZN_NFC/RAZNNFC copy-Info.plist"; sourceTree = "<absolute>"; };
+		F32C47B42E44E9B200869305 /* RAZNNFC.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = RAZNNFC.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -33,6 +34,7 @@
 			isa = PBXGroup;
 			children = (
 				F32C47B62E44E9B200869305 /* RAZN NFC */,
+				96BC36252E69C99500774470 /* RAZNNFC copy-Info.plist */,
 				F32C47B52E44E9B200869305 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -40,7 +42,7 @@
 		F32C47B52E44E9B200869305 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				F32C47B42E44E9B200869305 /* RAZN NFC.app */,
+				F32C47B42E44E9B200869305 /* RAZNNFC.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,9 +50,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		F32C47B32E44E9B200869305 /* RAZN NFC */ = {
+		F32C47B32E44E9B200869305 /* RAZNNFC */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = F32C47C22E44E9B300869305 /* Build configuration list for PBXNativeTarget "RAZN NFC" */;
+			buildConfigurationList = F32C47C22E44E9B300869305 /* Build configuration list for PBXNativeTarget "RAZNNFC" */;
 			buildPhases = (
 				F32C47B02E44E9B200869305 /* Sources */,
 				F32C47B12E44E9B200869305 /* Frameworks */,
@@ -63,11 +65,11 @@
 			fileSystemSynchronizedGroups = (
 				F32C47B62E44E9B200869305 /* RAZN NFC */,
 			);
-			name = "RAZN NFC";
+			name = RAZNNFC;
 			packageProductDependencies = (
 			);
 			productName = "RAZN NFC";
-			productReference = F32C47B42E44E9B200869305 /* RAZN NFC.app */;
+			productReference = F32C47B42E44E9B200869305 /* RAZNNFC.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -99,7 +101,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				F32C47B32E44E9B200869305 /* RAZN NFC */,
+				F32C47B32E44E9B200869305 /* RAZNNFC */,
 			);
 		};
 /* End PBXProject section */
@@ -330,7 +332,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		F32C47C22E44E9B300869305 /* Build configuration list for PBXNativeTarget "RAZN NFC" */ = {
+		F32C47C22E44E9B300869305 /* Build configuration list for PBXNativeTarget "RAZNNFC" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				F32C47C32E44E9B300869305 /* Debug */,
