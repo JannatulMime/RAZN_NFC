@@ -3,6 +3,7 @@ import CoreNFC
 
 class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate {
 
+    
     @Published var message = "Waiting for NFC tag..."
     var session: NFCNDEFReaderSession?
     var onScanComplete: ((String) -> Void)?
