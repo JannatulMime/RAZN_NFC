@@ -27,6 +27,11 @@ jobs:
 
           PP_PATH=$RUNNER_TEMP/build_pp.mobileprovision
 
+          
+          PROFILE_UUID=$( /usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin <(security cms -D -i "$PP_PATH") )
+          echo "Using provisioning profile UUID: $PROFILE_UUID"
+
+
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
 
