@@ -6,6 +6,7 @@ name: Build RAZN NFC app
   pull_request:
     branches:
       - '**'
+  workflow_dispatch:  # This allows the manual trigger
 jobs:
   build_with_signing:
     runs-on: macos-latest
