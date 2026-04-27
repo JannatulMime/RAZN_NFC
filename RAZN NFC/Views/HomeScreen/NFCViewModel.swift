@@ -7,13 +7,18 @@ import SwiftUI
 import UIKit
 
 final class NFCViewModel: ObservableObject {
-    @Published var icons: [NFCIcon] = NFCIconType.allCases.map { NFCIcon(type: $0) }
+    @Published var icons: [NFCIcon] = NFCIconType.displayOrder.map { NFCIcon(type: $0) }
     @Published var mainInputText: String = ""
     @Published var selectedSheet: NFCIcon?
     @Published var sheetInputText: String = ""
     @Published var toastMessage: String?
 
+    private let savedLinksKey = "nfc_tools_saved_links_v1"
     private var toastTask: Task<Void, Never>?
+
+    init() {
+        loadSavedLinks()
+    }
 
     var byteCount: Int {
         mainInputText.utf8.count
@@ -40,7 +45,10 @@ final class NFCViewModel: ObservableObject {
         }
 
         icons[index].savedLink = link.isEmpty ? nil : link
-        mainInputText = link
+        persistSavedLinks()
+        // Keep link persisted per icon, but do not force it
+        // into the main input after saving from sheet.
+        mainInputText = ""
         self.selectedSheet = nil
         showToast("Saved \(icons[index].type.label) link")
     }
@@ -87,16 +95,40 @@ final class NFCViewModel: ObservableObject {
             }
         }
     }
+
+    private func persistSavedLinks() {
+        let links = icons.reduce(into: [String: String]()) { result, icon in
+            guard let value = icon.savedLink?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !value.isEmpty else { return }
+            result[icon.type.rawValue] = value
+        }
+
+        UserDefaults.standard.set(links, forKey: savedLinksKey)
+    }
+
+    private func loadSavedLinks() {
+        guard let links = UserDefaults.standard.dictionary(forKey: savedLinksKey) as? [String: String] else {
+            return
+        }
+
+        icons = icons.map { icon in
+            var updatedIcon = icon
+            updatedIcon.savedLink = links[icon.type.rawValue]
+            return updatedIcon
+        }
+    }
 }
 
-#Preview {
-    let vm = NFCViewModel()
-    vm.mainInputText = "https://example.com"
-    return VStack(alignment: .leading, spacing: 8) {
-        Text("Icons: \(vm.icons.count)")
-        Text("Bytes: \(vm.byteCount)")
+struct NFCViewModel_Previews: PreviewProvider {
+    static var previews: some View {
+        let vm = NFCViewModel()
+        vm.mainInputText = "https://example.com"
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("Icons: \(vm.icons.count)")
+            Text("Bytes: \(vm.byteCount)")
+        }
+        .padding()
+        .background(Color.black)
+        .foregroundColor(.white)
     }
-    .padding()
-    .background(Color.black)
-    .foregroundStyle(.white)
 }

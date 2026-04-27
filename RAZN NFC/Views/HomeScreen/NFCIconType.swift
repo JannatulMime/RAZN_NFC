@@ -17,14 +17,19 @@ enum NFCIconType: String, CaseIterable, Identifiable, Codable {
 
     var id: String { rawValue }
 
+    static let displayOrder: [NFCIconType] = [
+        .whatsapp, .instagram, .linkedIn, .review,
+        .website, .telegram, .pay, .link
+    ]
+
     var label: String {
         switch self {
         case .whatsapp: return "WhatsApp"
         case .instagram: return "Instagram"
         case .linkedIn: return "LinkedIn"
-        case .telegram: return "Telegram"
+        case .telegram: return "Revolut"
         case .website: return "Website"
-        case .pay: return "Pay"
+        case .pay: return "PayPal"
         case .review: return "Review"
         case .link: return "Link"
         }
@@ -48,9 +53,9 @@ enum NFCIconType: String, CaseIterable, Identifiable, Codable {
         case .whatsapp: return "https://wa.me/1234567890"
         case .instagram: return "https://instagram.com/username"
         case .linkedIn: return "https://linkedin.com/in/username"
-        case .telegram: return "https://t.me/username"
+        case .telegram: return "https://revolut.me/username"
         case .website: return "https://example.com"
-        case .pay: return "https://pay.example.com/username"
+        case .pay: return "https://paypal.me/username"
         case .review: return "https://g.page/r/example/review"
         case .link: return "https://linktr.ee/username"
         }
@@ -68,19 +73,40 @@ enum NFCIconType: String, CaseIterable, Identifiable, Codable {
         case .link: return Color(hex: "#AF52DE") ?? .purple
         }
     }
-}
 
-#Preview {
-    VStack(spacing: 12) {
-        ForEach(NFCIconType.allCases) { type in
-            HStack {
-                Image(systemName: type.systemIcon)
-                Text(type.label)
-                Spacer()
-            }
-            .foregroundStyle(type.brandColor)
+    var iconAssetName: String? {
+        switch self {
+        case .whatsapp:
+            return "Whatsapp img 3"
+        case .instagram:
+            return "insta img"
+        case .linkedIn:
+            return "Linkin img"
+        case .telegram:
+            return "R img"
+        case .website, .link:
+            return "url_icon"
+        case .pay:
+            return "Paypal img 2"
+        case .review:
+            return "urlIMG"
         }
     }
-    .padding()
-    .background(Color.black)
+}
+
+struct NFCIconType_Previews: PreviewProvider {
+    static var previews: some View {
+        VStack(spacing: 12) {
+            ForEach(NFCIconType.allCases) { type in
+                HStack {
+                    Image(systemName: type.systemIcon)
+                    Text(type.label)
+                    Spacer()
+                }
+                .foregroundColor(type.brandColor)
+            }
+        }
+        .padding()
+        .background(Color.black)
+    }
 }
