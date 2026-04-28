@@ -8,11 +8,9 @@ import UIKit
 
 struct NFCToolsView: View {
     @Binding var path: [Screens]
-    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var vm = NFCViewModel()
     @State private var showShare = false
     @State private var keyboardHeight: CGFloat = 0
-    @State private var clipboardHasContent: Bool = false
 
     private let iconSize: CGFloat = 76
     private var columns: [GridItem] {
@@ -99,14 +97,6 @@ struct NFCToolsView: View {
         } message: {
             Text(vm.nfcAlertMessage)
         }
-        .onAppear {
-            refreshClipboardState()
-        }
-        .onChange(of: scenePhase) { newPhase in
-            if newPhase == .active {
-                refreshClipboardState()
-            }
-        }
     }
 
     private func dismissKeyboard() {
@@ -130,7 +120,7 @@ struct NFCToolsView: View {
             Spacer()
 
             Text("NFC TOOLS")
-                .font(.headline.weight(.bold))
+                .font(.custom(Constants.Fonts.cgoogla, size: 20))
                 .kerning(1.2)
                 .foregroundStyle(.white)
 
@@ -159,7 +149,7 @@ struct NFCToolsView: View {
 
     private var hintText: some View {
         Text("Press and hold to edit")
-            .font(.footnote)
+            .font(.custom(Constants.Fonts.cgoogla, size: 13))
             .foregroundStyle(.white.opacity(0.6))
     }
 
@@ -182,31 +172,26 @@ struct NFCToolsView: View {
             text: $vm.mainInputText,
             onPaste: {
                 vm.pasteFromClipboard()
-                refreshClipboardState()
             },
             onClear: {
                 vm.mainInputText = ""
             },
-            pasteEnabled: clipboardHasContent,
+            pasteEnabled: true,
             showTrailingOverlayClear: true
         )
-        .animation(.easeInOut(duration: 0.2), value: clipboardHasContent)
         .animation(.easeInOut(duration: 0.2), value: vm.mainInputText)
-        .onChange(of: vm.mainInputText) { _ in
-            refreshClipboardState()
-        }
         .padding(.top, 8)
     }
 
     private var writeButton: some View {
         Button(action: vm.writeNFC) {
             Text("Write / \(vm.byteCount) bytes")
-                .font(.headline.weight(.semibold))
-                .foregroundStyle(vm.isWriteEnabled ? .white : .gray)
+                .font(.custom(Constants.Fonts.cgoogla, size: 20))
+                .foregroundStyle(.white.opacity(vm.isWriteEnabled ? 1 : 0.65))
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 11)
-                .background(vm.isWriteEnabled ? Color.brandBlue : Color.gray.opacity(0.25))
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .padding(.vertical, 17)
+                .background(Color.brandBlue.opacity(vm.isWriteEnabled ? 1 : 0.45))
+                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         }
         .disabled(!vm.isWriteEnabled)
         .animation(.easeInOut(duration: 0.2), value: vm.isWriteEnabled)
@@ -215,12 +200,8 @@ struct NFCToolsView: View {
 
     private var discoverButton: some View {
         Button("Discover", action: vm.openDiscover)
-            .font(.footnote)
+            .font(.custom(Constants.Fonts.cgoogla, size: 14))
             .foregroundStyle(.white.opacity(0.7))
-    }
-
-    private func refreshClipboardState() {
-        clipboardHasContent = UIPasteboard.general.hasStrings || UIPasteboard.general.hasURLs
     }
 }
 

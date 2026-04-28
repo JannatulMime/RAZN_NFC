@@ -36,7 +36,7 @@ final class NFCViewModel: ObservableObject {
 
     var isWriteEnabled: Bool {
         let t = mainInputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return t.hasPrefix("http://") || t.hasPrefix("https://")
+        return !t.isEmpty
     }
 
     var isSheetSaveEnabled: Bool {

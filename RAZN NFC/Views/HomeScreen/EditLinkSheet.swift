@@ -35,11 +35,11 @@ struct EditLinkSheet: View {
             }
 
             Text("Edit \(icon.type.label)")
-                .font(.title3.weight(.bold))
+                .font(.custom(Constants.Fonts.cgoogla, size: 26))
                 .foregroundStyle(.white)
 
             Text(icon.hasLink ? (icon.savedLink ?? "") : "No link saved")
-                .font(.footnote)
+                .font(.custom(Constants.Fonts.cgoogla, size: 14))
                 .foregroundStyle(.white.opacity(0.7))
                 .lineLimit(1)
 
@@ -56,12 +56,14 @@ struct EditLinkSheet: View {
 
             HStack(spacing: 12) {
                 Button("Cancel", action: onCancel)
+                    .font(.custom(Constants.Fonts.cgoogla, size: 18))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                     .background(Color.white.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
                 Button("Save", action: onSave)
+                    .font(.custom(Constants.Fonts.cgoogla, size: 18))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                     .background(isSaveEnabled ? Color.brandBlue : Color.gray.opacity(0.4))
@@ -71,7 +73,6 @@ struct EditLinkSheet: View {
                     .disabled(!isSaveEnabled)
                     .animation(.easeInOut(duration: 0.2), value: isSaveEnabled)
             }
-            .font(.headline)
 
             Spacer(minLength: 0)
         }
