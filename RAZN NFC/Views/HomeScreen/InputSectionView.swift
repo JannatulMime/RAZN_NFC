@@ -10,24 +10,45 @@ struct InputSectionView: View {
     let onPaste: () -> Void
 
     var body: some View {
-        HStack(spacing: 10) {
-            TextField("Paste your link", text: $text)
+        HStack(spacing: 12) {
+            Image(systemName: "link")
+                .font(.body.weight(.semibold))
+                .foregroundColor(Color.black.opacity(0.28))
+
+            TextField(
+                "",
+                text: $text,
+                prompt: Text("Paste your link")
+                    .foregroundColor(Color.black.opacity(0.28))
+            )
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled(true)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .background(Color.white.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .foregroundStyle(.white)
+                .foregroundColor(Color.black.opacity(0.82))
 
-            Button("Paste", action: onPaste)
+            Rectangle()
+                .fill(Color.black.opacity(0.12))
+                .frame(width: 1, height: 22)
+
+            Button(action: onPaste) {
+                HStack(spacing: 8) {
+                    Image(systemName: "doc.on.clipboard")
+                    Text("Paste")
+                }
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.black)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .background(Color.white)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .foregroundColor(Color.black.opacity(0.62))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 8)
+            }
         }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(Color.black.opacity(0.06), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.14), radius: 20, x: 0, y: 8)
     }
 }
 

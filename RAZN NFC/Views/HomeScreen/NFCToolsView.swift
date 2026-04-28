@@ -53,6 +53,13 @@ struct NFCToolsView: View {
                 onComplete: { _ in }
             )
         }
+        .alert("NFC", isPresented: $vm.showNFCAlert) {
+            Button("OK") {
+                vm.showNFCAlert = false
+            }
+        } message: {
+            Text(vm.nfcAlertMessage)
+        }
     }
 
     private var backgroundView: some View {
@@ -137,7 +144,7 @@ struct NFCToolsView: View {
     }
 
     private var discoverButton: some View {
-        Button("Discover more about NFC", action: vm.openDiscover)
+        Button("Discover", action: vm.openDiscover)
             .font(.footnote)
             .foregroundStyle(.white.opacity(0.7))
     }

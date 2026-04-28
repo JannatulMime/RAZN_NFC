@@ -5,6 +5,7 @@
 
 import SwiftUI
 import UIKit
+import Combine
 
 final class NFCViewModel: ObservableObject {
     @Published var icons: [NFCIcon] = NFCIconType.displayOrder.map { NFCIcon(type: $0) }
@@ -12,12 +13,17 @@ final class NFCViewModel: ObservableObject {
     @Published var selectedSheet: NFCIcon?
     @Published var sheetInputText: String = ""
     @Published var toastMessage: String?
+    @Published var nfcAlertMessage: String = ""
+    @Published var showNFCAlert: Bool = false
 
     private let savedLinksKey = "nfc_tools_saved_links_v1"
     private var toastTask: Task<Void, Never>?
+    private let nfcReader = NFCReader()
+    private var cancellables = Set<AnyCancellable>()
 
     init() {
         loadSavedLinks()
+        bindNFCAlerts()
     }
 
     var byteCount: Int {
@@ -60,12 +66,18 @@ final class NFCViewModel: ObservableObject {
             return
         }
 
-        // Simulated NFC write action for UI flow testing.
-        showToast("NFC write complete (\(payload.utf8.count) bytes)")
+        nfcReader.write(payload) { [weak self] isSuccess in
+            guard let self else { return }
+            if isSuccess {
+                self.showToast("NFC write complete (\(payload.utf8.count) bytes)")
+            } else {
+                self.showToast("NFC write failed")
+            }
+        }
     }
 
     func openDiscover() {
-        guard let url = URL(string: "https://www.nfcforum.org/") else {
+        guard let url = URL(string: "https://razn.it/") else {
             showToast("Unable to open discover link")
             return
         }
@@ -116,6 +128,22 @@ final class NFCViewModel: ObservableObject {
             updatedIcon.savedLink = links[icon.type.rawValue]
             return updatedIcon
         }
+    }
+
+    private func bindNFCAlerts() {
+        nfcReader.$alertMessage
+            .receive(on: RunLoop.main)
+            .sink { [weak self] message in
+                self?.nfcAlertMessage = message
+            }
+            .store(in: &cancellables)
+
+        nfcReader.$showAlert
+            .receive(on: RunLoop.main)
+            .sink { [weak self] shouldShow in
+                self?.showNFCAlert = shouldShow
+            }
+            .store(in: &cancellables)
     }
 }
 
