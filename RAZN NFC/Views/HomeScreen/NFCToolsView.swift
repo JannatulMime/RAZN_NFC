@@ -10,32 +10,65 @@ struct NFCToolsView: View {
     @Binding var path: [Screens]
     @StateObject private var vm = NFCViewModel()
     @State private var showShare = false
+    @State private var keyboardHeight: CGFloat = 0
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 4)
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            backgroundView
+        ScrollViewReader { scrollProxy in
+            ZStack(alignment: .bottom) {
+                backgroundView
 
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 18) {
-                    header
-                    legacyHeroSection
-                    hintText
-                    iconGrid
-                    inputSection
-                    writeButton
-                    discoverButton
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 18) {
+                        header
+                        legacyHeroSection
+                        hintText
+                        iconGrid
+                        inputSection
+                            .id("main-input-section")
+                        writeButton
+                        discoverButton
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 18)
+                    .padding(.bottom, 90)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 18)
-                .padding(.bottom, 90)
-            }
+                .safeAreaInset(edge: .bottom) {
+                    Color.clear.frame(height: keyboardHeight)
+                }
 
-            if let message = vm.toastMessage {
-                ToastView(message: message)
-                    .padding(.bottom, 24)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                if let message = vm.toastMessage {
+                    ToastView(message: message)
+                        .padding(.bottom, 24)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                dismissKeyboard()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
+                guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else {
+                    return
+                }
+
+                let screenHeight = UIScreen.main.bounds.height
+                let overlap = max(0, screenHeight - frame.origin.y)
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    keyboardHeight = overlap
+                }
+
+                if overlap > 0 {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        scrollProxy.scrollTo("main-input-section", anchor: .bottom)
+                    }
+                }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    keyboardHeight = 0
+                }
             }
         }
         .sheet(item: $vm.selectedSheet) { icon in
@@ -60,6 +93,10 @@ struct NFCToolsView: View {
         } message: {
             Text(vm.nfcAlertMessage)
         }
+    }
+
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 
     private var backgroundView: some View {

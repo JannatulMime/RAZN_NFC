@@ -33,7 +33,7 @@ final class NFCViewModel: ObservableObject {
     func tap(icon: NFCIcon) {
         let value = icon.savedLink?.trimmingCharacters(in: .whitespacesAndNewlines)
         let linkToFill = (value?.isEmpty == false) ? value : icon.type.placeholderURL
-        mainInputText = linkToFill ?? ""
+        mainInputText = normalizeURLInput(linkToFill)
     }
 
     func longPress(icon: NFCIcon) {
@@ -60,7 +60,7 @@ final class NFCViewModel: ObservableObject {
     }
 
     func writeNFC() {
-        let payload = mainInputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let payload = normalizeURLInput(mainInputText)
         guard !payload.isEmpty else {
             showToast("Paste or choose a link first")
             return
@@ -144,6 +144,22 @@ final class NFCViewModel: ObservableObject {
                 self?.showNFCAlert = shouldShow
             }
             .store(in: &cancellables)
+    }
+
+    private func normalizeURLInput(_ input: String?) -> String {
+        let trimmed = input?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !trimmed.isEmpty else {
+            return ""
+        }
+
+        let lowercased = trimmed.lowercased()
+        if lowercased.hasPrefix("http://") ||
+            lowercased.hasPrefix("https://") ||
+            lowercased.hasPrefix("www.") {
+            return trimmed
+        }
+
+        return "https://\(trimmed)"
     }
 }
 
