@@ -25,7 +25,7 @@ struct NFCIcon: Identifiable, Equatable {
 
 struct NFCIcon_Previews: PreviewProvider {
     static var previews: some View {
-        let icon = NFCIcon(type: .website, savedLink: "https://example.com")
+        let icon = NFCIcon(type: .custom, savedLink: "https://example.com")
         return Text("\(icon.type.label) - Has Link: \(icon.hasLink ? "Yes" : "No")")
             .padding()
     }

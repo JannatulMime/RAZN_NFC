@@ -9,6 +9,7 @@
 import SwiftUI
 
 extension Color {
+    static let brandBlue = Color(hex: "#4A90E2") ?? .blue
   
     init?(hex: String) {
         var hexSanitized = hex.trimmingCharacters(in: .whitespacesAndNewlines)

@@ -6,9 +6,10 @@
 import SwiftUI
 import UIKit
 import Combine
+import AudioToolbox
 
 final class NFCViewModel: ObservableObject {
-    @Published var icons: [NFCIcon] = NFCIconType.displayOrder.map { NFCIcon(type: $0) }
+    @Published var icons: [NFCIcon]
     @Published var mainInputText: String = ""
     @Published var selectedSheet: NFCIcon?
     @Published var sheetInputText: String = ""
@@ -16,13 +17,16 @@ final class NFCViewModel: ObservableObject {
     @Published var nfcAlertMessage: String = ""
     @Published var showNFCAlert: Bool = false
 
-    private let savedLinksKey = "nfc_tools_saved_links_v1"
     private var toastTask: Task<Void, Never>?
     private let nfcReader = NFCReader()
     private var cancellables = Set<AnyCancellable>()
 
     init() {
-        loadSavedLinks()
+        icons = NFCIconType.displayOrder.map { type in
+            let key = "nfc_link_\(type.rawValue)"
+            let saved = UserDefaults.standard.string(forKey: key)
+            return NFCIcon(type: type, savedLink: saved)
+        }
         bindNFCAlerts()
     }
 
@@ -30,10 +34,26 @@ final class NFCViewModel: ObservableObject {
         mainInputText.utf8.count
     }
 
+    var isWriteEnabled: Bool {
+        let t = mainInputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return t.hasPrefix("http://") || t.hasPrefix("https://")
+    }
+
+    var isSheetSaveEnabled: Bool {
+        let t = sheetInputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return t.hasPrefix("http://") || t.hasPrefix("https://")
+    }
+
     func tap(icon: NFCIcon) {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        AudioServicesPlaySystemSound(1104)
         let value = icon.savedLink?.trimmingCharacters(in: .whitespacesAndNewlines)
         let linkToFill = (value?.isEmpty == false) ? value : ""
-        mainInputText = normalizeURLInput(linkToFill)
+        let normalized = normalizeURLInput(linkToFill)
+        mainInputText = normalized
+        if !normalized.isEmpty {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        }
     }
 
     func longPress(icon: NFCIcon) {
@@ -42,21 +62,31 @@ final class NFCViewModel: ObservableObject {
     }
 
     func saveLink() {
-        guard let selectedSheet else { return }
-        let link = sheetInputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let type = selectedSheet?.type else { return }
+        let trimmed = sheetInputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let key = "nfc_link_\(type.rawValue)"
 
-        guard let index = icons.firstIndex(where: { $0.id == selectedSheet.id }) else {
-            self.selectedSheet = nil
-            return
+        if trimmed.isEmpty {
+            UserDefaults.standard.removeObject(forKey: key)
+        } else {
+            UserDefaults.standard.set(trimmed, forKey: key)
         }
 
-        icons[index].savedLink = link.isEmpty ? nil : link
-        persistSavedLinks()
-        // Keep link persisted per icon, but do not force it
-        // into the main input after saving from sheet.
-        mainInputText = ""
-        self.selectedSheet = nil
-        showToast("Saved \(icons[index].type.label) link")
+        if let index = icons.firstIndex(where: { $0.type == type }) {
+            icons[index].savedLink = trimmed.isEmpty ? nil : trimmed
+        }
+
+        selectedSheet = nil
+        showToast("Link saved!")
+    }
+
+    func pasteFromClipboard() {
+        let pasted = UIPasteboard.general.string ?? ""
+        mainInputText = pasted
+        let trimmed = pasted.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty {
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+        }
     }
 
     func writeNFC() {
@@ -105,28 +135,6 @@ final class NFCViewModel: ObservableObject {
                     self?.toastMessage = nil
                 }
             }
-        }
-    }
-
-    private func persistSavedLinks() {
-        let links = icons.reduce(into: [String: String]()) { result, icon in
-            guard let value = icon.savedLink?.trimmingCharacters(in: .whitespacesAndNewlines),
-                  !value.isEmpty else { return }
-            result[icon.type.rawValue] = value
-        }
-
-        UserDefaults.standard.set(links, forKey: savedLinksKey)
-    }
-
-    private func loadSavedLinks() {
-        guard let links = UserDefaults.standard.dictionary(forKey: savedLinksKey) as? [String: String] else {
-            return
-        }
-
-        icons = icons.map { icon in
-            var updatedIcon = icon
-            updatedIcon.savedLink = links[icon.type.rawValue]
-            return updatedIcon
         }
     }
 

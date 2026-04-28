@@ -4,141 +4,100 @@
 //
 
 import SwiftUI
-import UIKit
 
 struct NFCIconButton: View {
     let icon: NFCIcon
     let onTap: () -> Void
     let onLongPress: () -> Void
-    private let cornerRadius: CGFloat = 18
+    @State private var isPressed: Bool = false
+    @State private var didLongPress: Bool = false
+    private let cornerRadius: CGFloat = 22
 
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottomTrailing) {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(Color.white.opacity(0.94))
+                .fill(Color.white)
                 .overlay(
                     RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                        .stroke(Color.white.opacity(0.15), lineWidth: 0.8)
+                        .stroke(Color.black.opacity(0.08), lineWidth: 1)
                 )
-                .shadow(color: .black.opacity(0.22), radius: 7, x: 0, y: 3)
 
-            iconVisual
-                .clipShape(RoundedRectangle(cornerRadius: cornerRadius - 1, style: .continuous))
-                .padding(3.5)
+            VStack(spacing: 4) {
+                Spacer(minLength: 0)
+
+                Image(systemName: icon.type.iconSymbolName)
+                    .font(.system(size: 28, weight: .regular))
+                    .foregroundStyle(.black)
+
+                Text(icon.type.label)
+                    .font(.custom(Constants.Fonts.cgoogla, size: 12))
+                    .foregroundStyle(.black)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .padding(.vertical, 9)
+            .frame(width: 76, height: 76)
+
+//            if icon.hasLink {
+//                Circle()
+//                    .fill(Color.brandBlue)
+//                    .frame(width: 7, height: 7)
+//                    .padding(.trailing, 6)
+//                    .padding(.bottom, 6)
+//            }
         }
-        .aspectRatio(1, contentMode: .fit)
+        .frame(width: 76, height: 76)
         .contentShape(Rectangle())
-        .onTapGesture(perform: onTap)
-        .onLongPressGesture(minimumDuration: 0.4, perform: onLongPress)
+        .scaleEffect(isPressed ? 0.88 : 1.0)
+        .opacity(isPressed ? 0.75 : 1.0)
+        .animation(.easeIn(duration: 0.08), value: isPressed)
+        .onTapGesture {
+            if didLongPress {
+                didLongPress = false
+                return
+            }
+            onTap()
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                isPressed = false
+            }
+        }
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.4)
+                .onEnded { _ in
+                    didLongPress = true
+                    onLongPress()
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        isPressed = false
+                    }
+                }
+        )
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    if !isPressed {
+                        withAnimation(.easeIn(duration: 0.08)) {
+                            isPressed = true
+                        }
+                    }
+                }
+                .onEnded { _ in
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                        isPressed = false
+                    }
+                }
+        )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(icon.type.label)
         .accessibilityHint("Tap to autofill, press and hold to edit")
     }
 
-    @ViewBuilder
-    private var iconVisual: some View {
-        if let assetName = icon.type.iconAssetName, UIImage(named: assetName) != nil {
-            Image(assetName)
-                .resizable()
-                .scaledToFit()
-                .padding(6)
-        }
-//        else {
-//            platformFallback
-//        }
-    }
-//
-//    @ViewBuilder
-//    private var platformFallback: some View {
-//        switch icon.type {
-//        case .whatsapp:
-//            ZStack {
-//                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-//                    .fill(Color(hex: "#38D95E") ?? .green)
-//                Image(systemName: "phone.fill")
-//                    .font(.system(size: 29, weight: .heavy))
-//                    .foregroundColor(.white)
-//            }
-//        case .instagram:
-//            ZStack {
-//                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-//                    .fill(
-//                        LinearGradient(
-//                            colors: [
-//                                Color(hex: "#FEDA77") ?? .yellow,
-//                                Color(hex: "#F58529") ?? .orange,
-//                                Color(hex: "#DD2A7B") ?? .pink,
-//                                Color(hex: "#8134AF") ?? .purple,
-//                                Color(hex: "#515BD4") ?? .blue
-//                            ],
-//                            startPoint: .topLeading,
-//                            endPoint: .bottomTrailing
-//                        )
-//                    )
-//                Image(systemName: "camera")
-//                    .font(.system(size: 27, weight: .bold))
-//                    .foregroundColor(.white)
-//            }
-//        case .linkedIn:
-//            ZStack {
-//                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-//                    .fill(Color(hex: "#0A66C2") ?? .blue)
-//                Text("in")
-//                    .font(.system(size: 34, weight: .black))
-//                    .foregroundColor(.white)
-//                    .offset(y: 1)
-//            }
-//        case .review:
-//            ZStack {
-//                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-//                    .fill(Color(hex: "#E6E8EE") ?? .gray.opacity(0.2))
-//                VStack(spacing: 2) {
-//                    Image(systemName: "person.crop.circle.fill")
-//                        .font(.system(size: 26, weight: .semibold))
-//                    Image(systemName: "star.square.on.square")
-//                        .font(.system(size: 18, weight: .bold))
-//                }
-//                .foregroundColor(Color(hex: "#E54EA1") ?? .pink)
-//            }
-//        case .telegram:
-//            ZStack {
-//                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-//                    .fill(Color(hex: "#EEF0F5") ?? .gray.opacity(0.18))
-//                VStack(spacing: -2) {
-//                    Text("R")
-//                        .font(.system(size: 36, weight: .heavy))
-//                        .foregroundColor(Color(hex: "#C2C7D2") ?? .gray)
-//                    Text("Revolut")
-//                        .font(.system(size: 10, weight: .medium))
-//                        .foregroundColor(Color(hex: "#A6ABB5") ?? .gray)
-//                }
-//            }
-//        case .pay:
-//            ZStack {
-//                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-//                    .fill(Color(hex: "#EDEFF4") ?? .gray.opacity(0.18))
-//                Text("PP")
-//                    .font(.system(size: 30, weight: .black))
-//                    .foregroundColor(Color(hex: "#0070BA") ?? .blue)
-//                    .tracking(-1.5)
-//            }
-//        case .website, .link:
-//            ZStack {
-//                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-//                    .fill(Color(hex: "#ECEEF3") ?? .gray.opacity(0.18))
-//                Image(systemName: "link")
-//                    .font(.system(size: 24, weight: .bold))
-//                    .foregroundColor(Color(hex: "#6E7480") ?? .gray)
-//            }
-//        }
-//    }
 }
 
 struct NFCIconButton_Previews: PreviewProvider {
     static var previews: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            NFCIconButton(icon: NFCIcon(type: .instagram), onTap: {}, onLongPress: {})
+            NFCIconButton(icon: NFCIcon(type: .chat), onTap: {}, onLongPress: {})
                 .padding()
         }
     }

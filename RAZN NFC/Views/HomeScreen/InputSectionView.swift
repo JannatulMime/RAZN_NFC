@@ -8,6 +8,10 @@ import SwiftUI
 struct InputSectionView: View {
     @Binding var text: String
     let onPaste: () -> Void
+    var onClear: (() -> Void)? = nil
+    var pasteEnabled: Bool = true
+    var showMiddleClearButton: Bool = false
+    var showTrailingOverlayClear: Bool = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -15,15 +19,36 @@ struct InputSectionView: View {
                 .font(.body.weight(.semibold))
                 .foregroundColor(Color.black.opacity(0.28))
 
-            TextField(
-                "",
-                text: $text,
-                prompt: Text("Paste your link")
-                    .foregroundColor(Color.black.opacity(0.28))
-            )
+            ZStack(alignment: .trailing) {
+                TextField(
+                    "",
+                    text: $text,
+                    prompt: Text("Paste your link")
+                        .foregroundColor(Color.black.opacity(0.28))
+                )
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled(true)
                 .foregroundColor(Color.black.opacity(0.82))
+                .font(.system(size: 13))
+                .padding(.trailing, showTrailingOverlayClear && !text.isEmpty ? 22 : 0)
+
+                if showTrailingOverlayClear, !text.isEmpty {
+                    Button(action: { onClear?() }) {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(.gray)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, 2)
+                }
+            }
+
+            if showMiddleClearButton, !text.isEmpty {
+                Button(action: { onClear?() }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.gray)
+                }
+                .buttonStyle(.plain)
+            }
 
             Rectangle()
                 .fill(Color.black.opacity(0.12))
@@ -35,13 +60,19 @@ struct InputSectionView: View {
                     Text("Paste")
                 }
                 .font(.subheadline.weight(.semibold))
-                .foregroundColor(Color.black.opacity(0.62))
+                .foregroundColor(pasteEnabled ? .white : .gray)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 8)
+                .opacity(pasteEnabled ? 1.0 : 0.4)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color.black.opacity(0.35))
+                )
             }
+            .disabled(!pasteEnabled)
         }
         .padding(.horizontal, 18)
-        .padding(.vertical, 14)
+        .padding(.vertical, 9)
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(

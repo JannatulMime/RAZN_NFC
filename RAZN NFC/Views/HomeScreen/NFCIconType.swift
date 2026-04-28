@@ -6,64 +6,86 @@
 import SwiftUI
 
 enum NFCIconType: String, CaseIterable, Identifiable, Codable {
-    case whatsapp
-    case instagram
-    case linkedIn
-    case telegram
-    case website
-    case pay
+    case social
+    case chat
+    case business
     case review
+    case custom
+    case pay
+    case website
     case link
 
     var id: String { rawValue }
 
     static let displayOrder: [NFCIconType] = [
-        .whatsapp, .instagram, .linkedIn, .review,
-        .website, .telegram, .pay, .link
+        .social, .chat, .business, .review,
+        .custom, .review, .pay, .link
     ]
 
     var label: String {
         switch self {
-        case .whatsapp: return "WhatsApp"
-        case .instagram: return "Instagram"
-        case .linkedIn: return "LinkedIn"
-        case .telegram: return "Telegram"
-        case .website: return "Website"
-        case .pay: return "PayPal"
+        case .social: return "Social"
+        case .chat: return "Chat"
+        case .business: return "Business"
         case .review: return "Review"
+        case .custom: return "Custom"
+        case .pay: return "Pay"
+        case .website: return "Website"
         case .link: return "Link"
         }
     }
 
     var brandColor: Color {
         switch self {
-        case .whatsapp: return Color(hex: "#25D366") ?? .green
-        case .instagram: return Color(hex: "#E1306C") ?? .pink
-        case .linkedIn: return Color(hex: "#0A66C2") ?? .blue
-        case .telegram: return Color(hex: "#229ED9") ?? .cyan
-        case .website: return Color(hex: "#8E8E93") ?? .gray
+        case .social: return Color(hex: "#25D366") ?? .green
+        case .chat: return Color(hex: "#E1306C") ?? .pink
+        case .business: return Color(hex: "#0A66C2") ?? .blue
+        case .review: return Color(hex: "#229ED9") ?? .cyan
+        case .custom: return Color(hex: "#8E8E93") ?? .gray
         case .pay: return Color(hex: "#34C759") ?? .mint
-        case .review: return Color(hex: "#FF9F0A") ?? .orange
+        case .website: return Color(hex: "#FF9F0A") ?? .orange
         case .link: return Color(hex: "#AF52DE") ?? .purple
         }
     }
 
     var iconAssetName: String? {
         switch self {
-        case .whatsapp:
+        case .social:
             return "whatsApp"
-        case .instagram:
+        case .chat:
             return "instagram"
-        case .linkedIn:
+        case .business:
             return "linkedin"
-        case .telegram:
+        case .review:
             return "telegram"
-        case .website, .link:
+        case .custom, .link:
             return "link_icon"
         case .pay:
             return "paypal"
+        case .website:
+            return "globe"
+        }
+    }
+    
+    
+    var iconSymbolName: String {
+        switch self {
+        case .social:
+            return "hand.thumbsup"
+        case .chat:
+            return "message"
+        case .business:
+            return "briefcase"
         case .review:
-            return "revoult"
+            return "star"
+        case .custom:
+            return "link"
+        case .pay:
+            return "creditcard"
+        case .website:
+            return "globe"
+        case .link:
+            return "link"
         }
     }
 }
@@ -73,7 +95,7 @@ struct NFCIconType_Previews: PreviewProvider {
         VStack(spacing: 12) {
             ForEach(NFCIconType.allCases) { type in
                 HStack {
-                    Image( type.iconAssetName!)
+                    Image(type.iconAssetName!)
                     Text(type.label)
                     Spacer()
                 }
