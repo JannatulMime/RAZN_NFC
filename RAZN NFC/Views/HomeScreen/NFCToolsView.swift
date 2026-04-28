@@ -109,7 +109,9 @@ struct NFCToolsView: View {
 
     private var header: some View {
         HStack {
-            Button(action: {}) {
+            Button(action: {
+                InteractionFeedback.tap()
+            }) {
                 Image(systemName: "gearshape.fill")
                     .foregroundStyle(.white.opacity(0.8))
                     .frame(width: 44, height: 44)
@@ -126,7 +128,10 @@ struct NFCToolsView: View {
 
             Spacer()
 
-            Button(action: { showShare = true }) {
+            Button(action: {
+                InteractionFeedback.tap()
+                showShare = true
+            }) {
                 Image(systemName: "square.and.arrow.up.fill")
                     .foregroundStyle(.white.opacity(0.85))
                     .frame(width: 44, height: 44)
@@ -158,8 +163,14 @@ struct NFCToolsView: View {
             ForEach(vm.icons) { icon in
                 NFCIconButton(
                     icon: icon,
-                    onTap: { vm.tap(icon: icon) },
-                    onLongPress: { vm.longPress(icon: icon) }
+                    onTap: {
+                        InteractionFeedback.tap()
+                        vm.tap(icon: icon)
+                    },
+                    onLongPress: {
+                        InteractionFeedback.longPress()
+                        vm.longPress(icon: icon)
+                    }
                 )
                 .frame(width: iconSize)
             }
@@ -171,9 +182,11 @@ struct NFCToolsView: View {
         InputSectionView(
             text: $vm.mainInputText,
             onPaste: {
+                InteractionFeedback.tap()
                 vm.pasteFromClipboard()
             },
             onClear: {
+                InteractionFeedback.tap()
                 vm.mainInputText = ""
             },
             pasteEnabled: true,
@@ -184,7 +197,10 @@ struct NFCToolsView: View {
     }
 
     private var writeButton: some View {
-        Button(action: vm.writeNFC) {
+        Button(action: {
+            InteractionFeedback.tap()
+            vm.writeNFC()
+        }) {
             Text("Write / \(vm.byteCount) bytes")
                 .font(.custom(Constants.Fonts.cgoogla, size: 20))
                 .foregroundStyle(.white.opacity(vm.isWriteEnabled ? 1 : 0.65))
@@ -199,7 +215,10 @@ struct NFCToolsView: View {
     }
 
     private var discoverButton: some View {
-        Button("Discover", action: vm.openDiscover)
+        Button("Discover") {
+            InteractionFeedback.tap()
+            vm.openDiscover()
+        }
             .font(.custom(Constants.Fonts.cgoogla, size: 14))
             .foregroundStyle(.white.opacity(0.7))
     }

@@ -46,23 +46,31 @@ struct EditLinkSheet: View {
             InputSectionView(
                 text: $inputText,
                 onPaste: {
+                    InteractionFeedback.tap()
                     inputText = UIPasteboard.general.string ?? ""
                 },
                 onClear: {
+                    InteractionFeedback.tap()
                     inputText = ""
                 },
                 showTrailingOverlayClear: true
             )
 
             HStack(spacing: 12) {
-                Button("Cancel", action: onCancel)
+                Button("Cancel") {
+                    InteractionFeedback.tap()
+                    onCancel()
+                }
                     .font(.custom(Constants.Fonts.cgoogla, size: 18))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
                     .background(Color.white.opacity(0.12))
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
 
-                Button("Save", action: onSave)
+                Button("Save") {
+                    InteractionFeedback.tap()
+                    onSave()
+                }
                     .font(.custom(Constants.Fonts.cgoogla, size: 18))
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
