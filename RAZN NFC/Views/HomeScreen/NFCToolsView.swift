@@ -12,7 +12,10 @@ struct NFCToolsView: View {
     @State private var showShare = false
     @State private var keyboardHeight: CGFloat = 0
 
-    private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 4)
+    private let iconSize: CGFloat = 60
+    private var columns: [GridItem] {
+        Array(repeating: GridItem(.fixed(iconSize), spacing: 12), count: 4)
+    }
 
     var body: some View {
         ScrollViewReader { scrollProxy in
@@ -156,8 +159,9 @@ struct NFCToolsView: View {
                     onTap: { vm.tap(icon: icon) },
                     onLongPress: { vm.longPress(icon: icon) }
                 )
+                .frame(width: iconSize, height: iconSize)
             }
-        }
+        }.padding(.horizontal,5)
     }
 
     private var inputSection: some View {

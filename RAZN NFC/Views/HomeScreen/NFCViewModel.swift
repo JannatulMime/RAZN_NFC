@@ -32,13 +32,13 @@ final class NFCViewModel: ObservableObject {
 
     func tap(icon: NFCIcon) {
         let value = icon.savedLink?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let linkToFill = (value?.isEmpty == false) ? value : icon.type.placeholderURL
+        let linkToFill = (value?.isEmpty == false) ? value : ""
         mainInputText = normalizeURLInput(linkToFill)
     }
 
     func longPress(icon: NFCIcon) {
         selectedSheet = icon
-        sheetInputText = icon.savedLink ?? icon.type.placeholderURL
+        sheetInputText = icon.savedLink ?? ""
     }
 
     func saveLink() {

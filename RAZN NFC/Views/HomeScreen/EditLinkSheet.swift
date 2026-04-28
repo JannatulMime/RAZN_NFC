@@ -23,8 +23,9 @@ struct EditLinkSheet: View {
                     .fill(icon.type.brandColor.opacity(0.22))
                     .frame(width: 76, height: 76)
 
-                Image(systemName: icon.type.systemIcon)
-                    .font(.system(size: 30, weight: .semibold))
+                Image(icon.type.iconAssetName!)
+                    .resizable()
+                    .frame(width: 30, height: 30)
                     .foregroundStyle(icon.type.brandColor)
             }
 
@@ -37,7 +38,7 @@ struct EditLinkSheet: View {
                 .foregroundStyle(.white.opacity(0.7))
                 .lineLimit(1)
 
-            TextField(icon.type.placeholderURL, text: $inputText)
+            TextField(icon.type.label, text: $inputText)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled(true)
                 .padding(.horizontal, 12)

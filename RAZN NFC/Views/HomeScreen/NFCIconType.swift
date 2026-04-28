@@ -27,7 +27,7 @@ enum NFCIconType: String, CaseIterable, Identifiable, Codable {
         case .whatsapp: return "WhatsApp"
         case .instagram: return "Instagram"
         case .linkedIn: return "LinkedIn"
-        case .telegram: return "Revolut"
+        case .telegram: return "Telegram"
         case .website: return "Website"
         case .pay: return "PayPal"
         case .review: return "Review"
@@ -35,31 +35,31 @@ enum NFCIconType: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-    var systemIcon: String {
-        switch self {
-        case .whatsapp: return "message.fill"
-        case .instagram: return "camera.fill"
-        case .linkedIn: return "person.2.fill"
-        case .telegram: return "paperplane.fill"
-        case .website: return "globe"
-        case .pay: return "creditcard.fill"
-        case .review: return "star.bubble.fill"
-        case .link: return "link"
-        }
-    }
-
-    var placeholderURL: String {
-        switch self {
-        case .whatsapp: return "https://wa.me/1234567890"
-        case .instagram: return "https://instagram.com/username"
-        case .linkedIn: return "https://linkedin.com/in/username"
-        case .telegram: return "https://revolut.me/username"
-        case .website: return "https://example.com"
-        case .pay: return "https://paypal.me/username"
-        case .review: return "https://g.page/r/example/review"
-        case .link: return "https://linktr.ee/username"
-        }
-    }
+//    var systemIcon: String {
+//        switch self {
+//        case .whatsapp: return "message.fill"
+//        case .instagram: return "camera.fill"
+//        case .linkedIn: return "person.2.fill"
+//        case .telegram: return "paperplane.fill"
+//        case .website: return "globe"
+//        case .pay: return "creditcard.fill"
+//        case .review: return "star.bubble.fill"
+//        case .link: return "link"
+//        }
+//    }
+//
+//    var inputPlaceholder: String {
+//        switch self {
+//        case .whatsapp: return "Enter WhatsApp link"
+//        case .instagram: return "Enter Instagram link"
+//        case .linkedIn: return "Enter LinkedIn link"
+//        case .telegram: return "Enter Revolut link"
+//        case .website: return "Enter website link"
+//        case .pay: return "Enter PayPal link"
+//        case .review: return "Enter review link"
+//        case .link: return "Enter link"
+//        }
+//    }
 
     var brandColor: Color {
         switch self {
@@ -77,19 +77,19 @@ enum NFCIconType: String, CaseIterable, Identifiable, Codable {
     var iconAssetName: String? {
         switch self {
         case .whatsapp:
-            return "Whatsapp img 3"
+            return "whatsApp"
         case .instagram:
-            return "insta img"
+            return "instagram"
         case .linkedIn:
-            return "Linkin img"
+            return "linkedin"
         case .telegram:
-            return "R img"
+            return "telegram"
         case .website, .link:
-            return "url_icon"
+            return "link_icon"
         case .pay:
-            return "Paypal img 2"
+            return "paypal"
         case .review:
-            return "urlIMG"
+            return "revoult"
         }
     }
 }
@@ -99,7 +99,7 @@ struct NFCIconType_Previews: PreviewProvider {
         VStack(spacing: 12) {
             ForEach(NFCIconType.allCases) { type in
                 HStack {
-                    Image(systemName: type.systemIcon)
+                    Image( type.iconAssetName!)
                     Text(type.label)
                     Spacer()
                 }
