@@ -67,16 +67,21 @@ struct InputSectionView: View {
                     Image(systemName: "doc.on.clipboard")
                     Text("Paste")
                 }
-                .font(.custom(Constants.Fonts.cgoogla, size: 10))
+                .font(.custom(Constants.Fonts.cgoogla, size: 12))
                 .foregroundColor(Color(red: 0.34, green: 0.44, blue: 0.88))
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
                 .opacity(pasteEnabled ? 1.0 : 0.55)
                 .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(Color(red: 0.93, green: 0.95, blue: 1.0))
                 )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color.black.opacity(0.06), lineWidth: 0.8)
+                )
             }
+            .buttonStyle(.plain)
             .disabled(!pasteEnabled)
         }
         .padding(.horizontal, 18)

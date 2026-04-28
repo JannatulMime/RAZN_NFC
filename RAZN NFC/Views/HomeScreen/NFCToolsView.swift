@@ -30,7 +30,9 @@ struct NFCToolsView: View {
                         iconGrid
                         inputSection
                             .id("main-input-section")
+                            .padding(.horizontal,10)
                         writeButton
+                            .padding(.horizontal,10)
                         discoverButton
                     }
                     .padding(.horizontal, 20)
@@ -206,9 +208,9 @@ struct NFCToolsView: View {
                 .foregroundStyle(.white.opacity(vm.isWriteEnabled ? 1 : 0.65))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 17)
-                .background(Color.brandBlue.opacity(vm.isWriteEnabled ? 1 : 0.45))
-                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .background(Color.brandBlue.opacity(vm.isWriteEnabled ? 1 : 0.45), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
+        .buttonStyle(.plain)
         .disabled(!vm.isWriteEnabled)
         .animation(.easeInOut(duration: 0.2), value: vm.isWriteEnabled)
         .padding(.top, 2)

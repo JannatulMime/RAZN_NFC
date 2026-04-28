@@ -57,28 +57,44 @@ struct EditLinkSheet: View {
             )
 
             HStack(spacing: 12) {
-                Button("Cancel") {
+                Button(action: {
                     InteractionFeedback.tap()
                     onCancel()
+                }) {
+                    Text("Cancel")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
                 }
                     .font(.custom(Constants.Fonts.cgoogla, size: 18))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.white.opacity(0.12))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .foregroundStyle(.blue)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(Color.white.opacity(0.15), lineWidth: 0.8)
+                    )
+                    .buttonStyle(.plain)
 
-                Button("Save") {
+                Button(action: {
                     InteractionFeedback.tap()
                     onSave()
+                }) {
+                    Text("Save")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
                 }
                     .font(.custom(Constants.Fonts.cgoogla, size: 18))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(isSaveEnabled ? Color.brandBlue : Color.gray.opacity(0.4))
-                    .foregroundStyle(.white)
-                    .opacity(isSaveEnabled ? 1.0 : 0.4)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .foregroundStyle(isSaveEnabled ? Color.white : Color.white.opacity(0.55))
+                    .background(
+                        isSaveEnabled ? Color.brandBlue.opacity(0.50) : Color.white.opacity(0.08),
+                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    )
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(isSaveEnabled ? Color.white.opacity(0.18) : Color.white.opacity(0.10), lineWidth: 0.8)
+                    )
                     .disabled(!isSaveEnabled)
+                    .buttonStyle(.plain)
                     .animation(.easeInOut(duration: 0.2), value: isSaveEnabled)
             }
 
