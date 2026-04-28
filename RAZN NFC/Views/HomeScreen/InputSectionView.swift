@@ -19,7 +19,7 @@ struct InputSectionView: View {
                 .font(.body.weight(.semibold))
                 .foregroundColor(Color.black.opacity(0.28))
 
-            ZStack(alignment: .trailing) {
+            HStack(spacing: 8) {
                 TextField(
                     "",
                     text: $text,
@@ -30,22 +30,29 @@ struct InputSectionView: View {
                 .autocorrectionDisabled(true)
                 .foregroundColor(Color.black.opacity(0.82))
                 .font(.system(size: 13))
-                .padding(.trailing, showTrailingOverlayClear && !text.isEmpty ? 22 : 0)
 
                 if showTrailingOverlayClear, !text.isEmpty {
                     Button(action: { onClear?() }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.gray)
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 18, height: 18)
+                            .background(Color.black.opacity(0.85))
+                            .clipShape(Circle())
                     }
                     .buttonStyle(.plain)
-                    .padding(.trailing, 2)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             if showMiddleClearButton, !text.isEmpty {
                 Button(action: { onClear?() }) {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.gray)
+                    Image(systemName: "xmark")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 18, height: 18)
+                        .background(Color.black.opacity(0.85))
+                        .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
             }

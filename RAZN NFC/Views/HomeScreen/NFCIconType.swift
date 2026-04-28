@@ -19,7 +19,7 @@ enum NFCIconType: String, CaseIterable, Identifiable, Codable {
 
     static let displayOrder: [NFCIconType] = [
         .social, .chat, .business, .review,
-        .custom, .review, .pay, .link
+        .custom, .pay, .website, .link
     ]
 
     var label: String {

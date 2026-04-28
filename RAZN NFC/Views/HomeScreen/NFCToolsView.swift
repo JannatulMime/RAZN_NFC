@@ -188,7 +188,7 @@ struct NFCToolsView: View {
                 vm.mainInputText = ""
             },
             pasteEnabled: clipboardHasContent,
-            showMiddleClearButton: true
+            showTrailingOverlayClear: true
         )
         .animation(.easeInOut(duration: 0.2), value: clipboardHasContent)
         .animation(.easeInOut(duration: 0.2), value: vm.mainInputText)

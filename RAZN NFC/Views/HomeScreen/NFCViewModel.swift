@@ -41,7 +41,7 @@ final class NFCViewModel: ObservableObject {
 
     var isSheetSaveEnabled: Bool {
         let t = sheetInputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return t.hasPrefix("http://") || t.hasPrefix("https://")
+        return !t.isEmpty
     }
 
     func tap(icon: NFCIcon) {
