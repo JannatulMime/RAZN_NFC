@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct EditLinkSheet: View {
     let icon: NFCIcon
@@ -38,14 +39,9 @@ struct EditLinkSheet: View {
                 .foregroundStyle(.white.opacity(0.7))
                 .lineLimit(1)
 
-            TextField(icon.type.label, text: $inputText)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled(true)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 12)
-                .background(Color.white.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .foregroundStyle(.white)
+            InputSectionView(text: $inputText) {
+                inputText = UIPasteboard.general.string ?? ""
+            }
 
             HStack(spacing: 12) {
                 Button("Cancel", action: onCancel)

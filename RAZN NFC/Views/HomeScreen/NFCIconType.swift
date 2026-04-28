@@ -35,32 +35,6 @@ enum NFCIconType: String, CaseIterable, Identifiable, Codable {
         }
     }
 
-//    var systemIcon: String {
-//        switch self {
-//        case .whatsapp: return "message.fill"
-//        case .instagram: return "camera.fill"
-//        case .linkedIn: return "person.2.fill"
-//        case .telegram: return "paperplane.fill"
-//        case .website: return "globe"
-//        case .pay: return "creditcard.fill"
-//        case .review: return "star.bubble.fill"
-//        case .link: return "link"
-//        }
-//    }
-//
-//    var inputPlaceholder: String {
-//        switch self {
-//        case .whatsapp: return "Enter WhatsApp link"
-//        case .instagram: return "Enter Instagram link"
-//        case .linkedIn: return "Enter LinkedIn link"
-//        case .telegram: return "Enter Revolut link"
-//        case .website: return "Enter website link"
-//        case .pay: return "Enter PayPal link"
-//        case .review: return "Enter review link"
-//        case .link: return "Enter link"
-//        }
-//    }
-
     var brandColor: Color {
         switch self {
         case .whatsapp: return Color(hex: "#25D366") ?? .green
