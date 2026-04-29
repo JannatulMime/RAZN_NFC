@@ -27,15 +27,14 @@ struct NFCToolsView: View {
                         VStack(spacing: 18) {
                             header
                             legacyHeroSection
-                            Spacer(minLength: 0)
                             hintText
-
+                                .padding(.top,30)
                             iconGrid
                             inputSection
                                 .id("main-input-section")
-                                .padding(.horizontal, 10)
+                                .padding(.horizontal, 20)
                             writeButton
-                                .padding(.horizontal, 10)
+                                .padding(.horizontal, 20)
                             discoverButton
                         }
                         .frame(minHeight: geometry.size.height, alignment: .top)
@@ -129,12 +128,12 @@ struct NFCToolsView: View {
 
             Spacer()
 
-//            Text("NFC TOOLS")
-//                .font(.custom(Constants.Fonts.interRegular, size: 20))
-//                .kerning(1.2)
-//                .foregroundStyle(.white)
-//
-//            Spacer()
+            Text("WELCOME")
+                .font(.custom(Constants.Fonts.interRegular, size: 16))
+                .kerning(1.2)
+                .foregroundStyle(.white)
+
+            Spacer()
 
             Button(action: {
                 InteractionFeedback.tap()
