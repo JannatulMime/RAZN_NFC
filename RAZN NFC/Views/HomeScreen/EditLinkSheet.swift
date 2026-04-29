@@ -54,7 +54,7 @@ struct EditLinkSheet: View {
                     inputText = ""
                 },
                 showTrailingOverlayClear: true
-            )
+            ).padding(.horizontal,20)
 
             HStack(spacing: 12) {
                 Button(action: {
@@ -97,11 +97,11 @@ struct EditLinkSheet: View {
                     .buttonStyle(.plain)
                     .animation(.easeInOut(duration: 0.2), value: isSaveEnabled)
             }
+            .padding(.horizontal,20)
 
             Spacer(minLength: 0)
         }
        // .padding(.horizontal, 20)
-        .presentationDetents([.height(360)])
         .presentationDragIndicator(.hidden)
         .background(Color(hex: "#090A12") ?? Color.black)
        // .modifier(SheetFullWidthSizingModifier())
@@ -117,27 +117,6 @@ private struct SheetFullWidthSizingModifier: ViewModifier {
         }
     }
 }
-
-//    private var iconSymbolName: String {
-//        switch icon.type {
-//        case .social:
-//            return "message.fill"
-//        case .chat:
-//            return "camera.fill"
-//        case .business:
-//            return "briefcase.fill"
-//        case .review:
-//            return "paperplane.fill"
-//        case .custom:
-//            return "globe"
-//        case .pay:
-//            return "hand.point.up.left.fill"
-//        case .website:
-//            return "star.fill"
-//        case .link:
-//            return "link"
-//        }
-//    }
 }
 
 struct EditLinkSheet_Previews: PreviewProvider {

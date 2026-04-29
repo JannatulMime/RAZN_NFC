@@ -89,6 +89,7 @@ struct NFCToolsView: View {
                 onSave: vm.saveLink,
                 onCancel: { vm.selectedSheet = nil }
             )
+            .presentationDetents([.height(360)])
         }
         .sheet(isPresented: $showShare) {
             ShareActivityView(
