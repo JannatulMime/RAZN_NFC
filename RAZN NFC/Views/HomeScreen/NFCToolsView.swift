@@ -124,7 +124,7 @@ struct NFCToolsView: View {
             Spacer()
 
             Text("NFC TOOLS")
-                .font(.custom(Constants.Fonts.cgoogla, size: 20))
+                .font(.custom(Constants.Fonts.interRegular, size: 20))
                 .kerning(1.2)
                 .foregroundStyle(.white)
 
@@ -156,7 +156,7 @@ struct NFCToolsView: View {
 
     private var hintText: some View {
         Text("Press and hold to edit")
-            .font(.custom(Constants.Fonts.cgoogla, size: 13))
+            .font(.custom(Constants.Fonts.interRegular, size: 13))
             .foregroundStyle(.white.opacity(0.6))
     }
 
@@ -204,7 +204,7 @@ struct NFCToolsView: View {
             vm.writeNFC()
         }) {
             Text("Write / \(vm.byteCount) bytes")
-                .font(.custom(Constants.Fonts.cgoogla, size: 20))
+                .font(.custom(Constants.Fonts.interBold, size: 20))
                 .foregroundStyle(.white.opacity(vm.isWriteEnabled ? 1 : 0.65))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 17)
@@ -221,7 +221,7 @@ struct NFCToolsView: View {
             InteractionFeedback.tap()
             vm.openDiscover()
         }
-            .font(.custom(Constants.Fonts.cgoogla, size: 14))
+            .font(.custom(Constants.Fonts.interRegular, size: 14))
             .foregroundStyle(.white.opacity(0.7))
     }
 }

@@ -9,7 +9,7 @@ import AudioToolbox
 enum InteractionFeedback {
     // Toggle these from one place.
     static var isHapticEnabled: Bool = true
-    static var isSoundEnabled: Bool = true
+    static var isSoundEnabled: Bool = false
 
     // Built-in iOS system sound IDs; adjust if you prefer different tones.
     static var tapSoundID: SystemSoundID = 1104

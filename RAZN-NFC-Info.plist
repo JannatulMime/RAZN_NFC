@@ -5,6 +5,8 @@
 	<key>UIAppFonts</key>
 	<array>
 		<string>Croogla4F.ttf</string>
+		<string>Inter_Regular.ttf</string>
+		<string>Inter_Bold.ttf</string>
 	</array>
 </dict>
 </plist>

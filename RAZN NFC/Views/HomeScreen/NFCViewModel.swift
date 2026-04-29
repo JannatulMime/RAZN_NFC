@@ -47,7 +47,10 @@ final class NFCViewModel: ObservableObject {
     func tap(icon: NFCIcon) {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         AudioServicesPlaySystemSound(1104)
-        let value = icon.savedLink?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let latestIcon = icons.first(where: { $0.id == icon.id })
+            ?? icons.first(where: { $0.type == icon.type })
+            ?? icon
+        let value = latestIcon.savedLink?.trimmingCharacters(in: .whitespacesAndNewlines)
         let linkToFill = (value?.isEmpty == false) ? value : ""
         let normalized = normalizeURLInput(linkToFill)
         mainInputText = normalized
@@ -72,12 +75,21 @@ final class NFCViewModel: ObservableObject {
             UserDefaults.standard.set(trimmed, forKey: key)
         }
 
-        if let index = icons.firstIndex(where: { $0.type == type }) {
-            icons[index].savedLink = trimmed.isEmpty ? nil : trimmed
+        let savedLink = trimmed.isEmpty ? nil : trimmed
+        icons = icons.map { icon in
+            guard icon.type == type else { return icon }
+            var updated = icon
+            updated.savedLink = savedLink
+            return updated
         }
 
-        selectedSheet = nil
         showToast("Link saved!")
+        // Delay sheet dismissal slightly so the same tap cannot pass through
+        // and accidentally trigger controls in the underlying view.
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 120_000_000)
+            self?.selectedSheet = nil
+        }
     }
 
     func pasteFromClipboard() {

@@ -35,11 +35,11 @@ struct EditLinkSheet: View {
             }
 
             Text("Edit \(icon.type.label)")
-                .font(.custom(Constants.Fonts.cgoogla, size: 26))
+                .font(.custom(Constants.Fonts.interRegular, size: 26))
                 .foregroundStyle(.white)
 
             Text(icon.hasLink ? (icon.savedLink ?? "") : "No link saved")
-                .font(.custom(Constants.Fonts.cgoogla, size: 14))
+                .font(.custom(Constants.Fonts.interRegular, size: 14))
                 .foregroundStyle(.white.opacity(0.7))
                 .lineLimit(1)
 
@@ -65,7 +65,7 @@ struct EditLinkSheet: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                 }
-                    .font(.custom(Constants.Fonts.cgoogla, size: 18))
+                    .font(.custom(Constants.Fonts.interRegular, size: 18))
                     .foregroundStyle(.blue)
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay(
@@ -82,7 +82,7 @@ struct EditLinkSheet: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                 }
-                    .font(.custom(Constants.Fonts.cgoogla, size: 18))
+                    .font(.custom(Constants.Fonts.interRegular, size: 18))
                     .foregroundStyle(isSaveEnabled ? Color.white : Color.white.opacity(0.55))
                     .background(
                         isSaveEnabled ? Color.brandBlue.opacity(0.50) : Color.white.opacity(0.08),

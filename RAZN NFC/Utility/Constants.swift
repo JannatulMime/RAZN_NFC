@@ -10,6 +10,8 @@ import Foundation
 class Constants {
     class Fonts {
         static let cgoogla = "Croogla4F"
+        static let interRegular = "Inter-Regular"
+        static let interBold = "Inter-Bold"
     }
     
    static func getAppLink() -> URL {

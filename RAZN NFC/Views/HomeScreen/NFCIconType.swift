@@ -25,7 +25,7 @@ enum NFCIconType: String, CaseIterable, Identifiable, Codable {
     var label: String {
         switch self {
         case .social: return "Social"
-        case .chat: return "Chat"
+        case .chat: return "Message"
         case .business: return "Business"
         case .review: return "Review"
         case .custom: return "Custom"
