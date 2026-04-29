@@ -36,6 +36,7 @@ struct NFCToolsView: View {
                             writeButton
                                 .padding(.horizontal, 20)
                             discoverButton
+                                .padding(.top,20)
                         }
                         .frame(minHeight: geometry.size.height, alignment: .top)
                         .padding(.horizontal, 20)
@@ -205,6 +206,7 @@ struct NFCToolsView: View {
 
     private var writeButton: some View {
         Button(action: {
+            guard vm.isWriteEnabled else { return }
             InteractionFeedback.tap()
             vm.writeNFC()
         }) {
@@ -213,10 +215,13 @@ struct NFCToolsView: View {
                 .foregroundStyle( Color.white )
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 17)
-                .background( vm.isWriteEnabled ? Color.brandBlue : Color(.gray)  , in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(
+                    vm.isWriteEnabled ? Color.brandBlue : Color(red: 0.46, green: 0.46, blue: 0.48),
+                    in: RoundedRectangle(cornerRadius: 14, style: .continuous)
+                )
         }
         .buttonStyle(.plain)
-        .disabled(!vm.isWriteEnabled)
+        .allowsHitTesting(vm.isWriteEnabled)
         .animation(.easeInOut(duration: 0.2), value: vm.isWriteEnabled)
         .padding(.top, 2)
     }

@@ -68,7 +68,7 @@ struct InputSectionView: View {
                     Text("Paste")
                 }
                 .font(.custom(Constants.Fonts.interRegular, size: 12))
-                .foregroundColor(Color(red: 0.34, green: 0.44, blue: 0.88))
+                .foregroundColor(Color.brandBlue)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .opacity(pasteEnabled ? 1.0 : 0.55)

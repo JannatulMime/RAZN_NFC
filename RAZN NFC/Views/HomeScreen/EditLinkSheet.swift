@@ -66,7 +66,7 @@ struct EditLinkSheet: View {
                         .padding(.vertical, 12)
                 }
                     .font(.custom(Constants.Fonts.interRegular, size: 18))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(.white)
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -85,7 +85,7 @@ struct EditLinkSheet: View {
                     .font(.custom(Constants.Fonts.interRegular, size: 18))
                     .foregroundStyle(isSaveEnabled ? Color.white : Color.white.opacity(0.55))
                     .background(
-                        isSaveEnabled ? Color.brandBlue.opacity(0.50) : Color.white.opacity(0.08),
+                        isSaveEnabled ? Color.brandBlue : Color.white.opacity(0.08),
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous)
                     )
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
