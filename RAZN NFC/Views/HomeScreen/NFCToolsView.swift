@@ -28,7 +28,7 @@ struct NFCToolsView: View {
                             header
                             legacyHeroSection
                             hintText
-                                .padding(.top,30)
+                                .padding(.top,40)
                             iconGrid
                             inputSection
                                 .id("main-input-section")

@@ -30,7 +30,7 @@ struct NFCIconButton: View {
                     .foregroundStyle(.black)
 
                 Text(icon.type.label)
-                    .font(.custom(Constants.Fonts.cgoogla, size: 12))
+                    .font(.custom(Constants.Fonts.interRegular, size: 12))
                     .foregroundStyle(.black)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
