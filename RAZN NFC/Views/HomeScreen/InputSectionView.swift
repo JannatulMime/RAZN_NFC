@@ -25,12 +25,12 @@ struct InputSectionView: View {
                     text: $text,
                     prompt: Text("Paste your link")
                         .foregroundColor(Color(red: 0.62, green: 0.66, blue: 0.72))
-                        .font(.custom(Constants.Fonts.cgoogla, size: 13))
+                        .font(.custom(Constants.Fonts.interRegular, size: 13))
                 )
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled(true)
                 .foregroundColor(Color.black.opacity(0.85))
-                .font(.custom(Constants.Fonts.cgoogla, size: 16))
+                .font(.custom(Constants.Fonts.interRegular, size: 16))
 
                 if showTrailingOverlayClear, !text.isEmpty {
                     Button(action: { onClear?() }) {
@@ -67,7 +67,7 @@ struct InputSectionView: View {
                     Image(systemName: "doc.on.clipboard")
                     Text("Paste")
                 }
-                .font(.custom(Constants.Fonts.cgoogla, size: 12))
+                .font(.custom(Constants.Fonts.interRegular, size: 12))
                 .foregroundColor(Color(red: 0.34, green: 0.44, blue: 0.88))
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)

@@ -31,7 +31,7 @@ enum NFCIconType: String, CaseIterable, Identifiable, Codable {
         case .custom: return "Custom"
         case .pay: return "Pay"
         case .website: return "Website"
-        case .link: return "Link"
+        case .link: return "Custom"
         }
     }
 

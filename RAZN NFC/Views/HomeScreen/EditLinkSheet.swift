@@ -61,7 +61,7 @@ struct EditLinkSheet: View {
                     InteractionFeedback.tap()
                     onCancel()
                 }) {
-                    Text("Cancel")
+                    Text("Back")
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
                 }
@@ -100,11 +100,23 @@ struct EditLinkSheet: View {
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 20)
+       // .padding(.horizontal, 20)
         .presentationDetents([.height(360)])
         .presentationDragIndicator(.hidden)
         .background(Color(hex: "#090A12") ?? Color.black)
+       // .modifier(SheetFullWidthSizingModifier())
     }
+
+/// iOS 18+ sheets default to an inset "card" width; `.page` uses the full screen width.
+private struct SheetFullWidthSizingModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 18.0, *) {
+            content.presentationSizing(.page)
+        } else {
+            content
+        }
+    }
+}
 
 //    private var iconSymbolName: String {
 //        switch icon.type {

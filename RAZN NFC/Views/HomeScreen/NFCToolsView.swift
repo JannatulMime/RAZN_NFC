@@ -22,22 +22,27 @@ struct NFCToolsView: View {
             ZStack(alignment: .bottom) {
                 backgroundView
 
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 18) {
-                        header
-                        legacyHeroSection
-                        hintText
-                        iconGrid
-                        inputSection
-                            .id("main-input-section")
-                            .padding(.horizontal,10)
-                        writeButton
-                            .padding(.horizontal,10)
-                        discoverButton
+                GeometryReader { geometry in
+                    ScrollView(showsIndicators: false) {
+                        VStack(spacing: 18) {
+                            header
+                            legacyHeroSection
+                            Spacer(minLength: 0)
+                            hintText
+
+                            iconGrid
+                            inputSection
+                                .id("main-input-section")
+                                .padding(.horizontal, 10)
+                            writeButton
+                                .padding(.horizontal, 10)
+                            discoverButton
+                        }
+                        .frame(minHeight: geometry.size.height, alignment: .top)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 18)
+                        .padding(.bottom, 40)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 18)
-                    .padding(.bottom, 90)
                 }
                 .safeAreaInset(edge: .bottom) {
                     Color.clear.frame(height: keyboardHeight)
@@ -123,12 +128,12 @@ struct NFCToolsView: View {
 
             Spacer()
 
-            Text("NFC TOOLS")
-                .font(.custom(Constants.Fonts.interRegular, size: 20))
-                .kerning(1.2)
-                .foregroundStyle(.white)
-
-            Spacer()
+//            Text("NFC TOOLS")
+//                .font(.custom(Constants.Fonts.interRegular, size: 20))
+//                .kerning(1.2)
+//                .foregroundStyle(.white)
+//
+//            Spacer()
 
             Button(action: {
                 InteractionFeedback.tap()
@@ -148,8 +153,8 @@ struct NFCToolsView: View {
         VStack(spacing: 0) {
             Image("razuAppIcon")
                 .resizable()
-                .frame(width: 264, height: 264)
-                .offset(y: -70)
+                .frame(width: 200, height: 200)
+                //.offset(y: -70)
                 .padding(.bottom, -60)
         }
     }
@@ -205,10 +210,10 @@ struct NFCToolsView: View {
         }) {
             Text("Write / \(vm.byteCount) bytes")
                 .font(.custom(Constants.Fonts.interBold, size: 20))
-                .foregroundStyle(.white.opacity(vm.isWriteEnabled ? 1 : 0.65))
+                .foregroundStyle( Color.white )
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 17)
-                .background(Color.brandBlue.opacity(vm.isWriteEnabled ? 1 : 0.45), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background( vm.isWriteEnabled ? Color.brandBlue : Color(.gray)  , in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(!vm.isWriteEnabled)
