@@ -62,40 +62,42 @@ struct EditLinkSheet: View {
                     onCancel()
                 }) {
                     Text("Back")
+                        .font(.custom(Constants.Fonts.interRegular, size: 18))
+                        .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
+                        .contentShape(Rectangle())
                 }
-                    .font(.custom(Constants.Fonts.interRegular, size: 18))
-                    .foregroundStyle(.white)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(Color.white.opacity(0.15), lineWidth: 0.8)
-                    )
-                    .buttonStyle(.plain)
+                .buttonStyle(.plain)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(Color.white.opacity(0.15), lineWidth: 0.8)
+                )
 
                 Button(action: {
                     InteractionFeedback.tap()
                     onSave()
                 }) {
                     Text("Save")
+                        .font(.custom(Constants.Fonts.interRegular, size: 18))
+                        .foregroundStyle(isSaveEnabled ? Color.white : Color.white.opacity(0.55))
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 12)
+                        .contentShape(Rectangle())
                 }
-                    .font(.custom(Constants.Fonts.interRegular, size: 18))
-                    .foregroundStyle(isSaveEnabled ? Color.white : Color.white.opacity(0.55))
-                    .background(
-                        isSaveEnabled ? Color.brandBlue : Color.white.opacity(0.08),
-                        in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    )
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .stroke(isSaveEnabled ? Color.white.opacity(0.18) : Color.white.opacity(0.10), lineWidth: 0.8)
-                    )
-                    .disabled(!isSaveEnabled)
-                    .buttonStyle(.plain)
-                    .animation(.easeInOut(duration: 0.2), value: isSaveEnabled)
+                .buttonStyle(.plain)
+                .background(
+                    isSaveEnabled ? Color.brandBlue : Color.white.opacity(0.08),
+                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+                )
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(isSaveEnabled ? Color.white.opacity(0.18) : Color.white.opacity(0.10), lineWidth: 0.8)
+                )
+                .disabled(!isSaveEnabled)
+                .animation(.easeInOut(duration: 0.2), value: isSaveEnabled)
             }
             .padding(.horizontal,20)
 

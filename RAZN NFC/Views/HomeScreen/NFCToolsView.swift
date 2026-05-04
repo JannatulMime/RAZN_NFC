@@ -6,11 +6,25 @@
 import SwiftUI
 import UIKit
 
+private enum NFCToolsScrollMetrics {
+    /// SwiftUI layout variance — treat as overflow only when clearly taller than viewport.
+    static let scrollThresholdPadding: CGFloat = 2
+}
+
+private struct NFCToolsScrollContentHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
 struct NFCToolsView: View {
     @Binding var path: [Screens]
     @StateObject private var vm = NFCViewModel()
     @State private var showShare = false
     @State private var keyboardHeight: CGFloat = 0
+    @State private var scrollContentHeight: CGFloat = 0
 
     private let iconSize: CGFloat = 76
     private var columns: [GridItem] {
@@ -23,6 +37,11 @@ struct NFCToolsView: View {
                 backgroundView
 
                 GeometryReader { geometry in
+                    let viewportHeight = max(0, geometry.size.height - keyboardHeight)
+                    let contentOverflows = scrollContentHeight > viewportHeight + NFCToolsScrollMetrics.scrollThresholdPadding
+                    /// `scrollDisabled` also blocks `ScrollViewReader.scrollTo`; keep scrolling enabled while the keyboard is up.
+                    let userScrollEnabled = contentOverflows || keyboardHeight > 0
+
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 18) {
                             header
@@ -38,11 +57,22 @@ struct NFCToolsView: View {
                             discoverButton
                                 .padding(.top,20)
                         }
-                        .frame(minHeight: geometry.size.height, alignment: .top)
+                        .frame(minHeight: viewportHeight, alignment: .top)
                         .padding(.horizontal, 20)
                         .padding(.top, 18)
                         .padding(.bottom, 40)
+                        .background(
+                            GeometryReader { contentGeo in
+                                Color.clear.preference(
+                                    key: NFCToolsScrollContentHeightKey.self,
+                                    value: contentGeo.size.height
+                                )
+                            }
+                        )
                     }
+                    .scrollBounceBehavior(.basedOnSize)
+                    .scrollDisabled(!userScrollEnabled)
+                    .onPreferenceChange(NFCToolsScrollContentHeightKey.self) { scrollContentHeight = $0 }
                 }
                 .safeAreaInset(edge: .bottom) {
                     Color.clear.frame(height: keyboardHeight)
