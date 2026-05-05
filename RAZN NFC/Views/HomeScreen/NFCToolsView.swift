@@ -25,6 +25,8 @@ struct NFCToolsView: View {
     @State private var showShare = false
     @State private var keyboardHeight: CGFloat = 0
     @State private var scrollContentHeight: CGFloat = 0
+    /// Keeps scrolling enabled briefly after hiding the keyboard so `scrollTo` runs before `scrollDisabled` engages (short content).
+    @State private var unlockScrollForDismissReset = false
 
     private let iconSize: CGFloat = 76
     private var columns: [GridItem] {
@@ -39,8 +41,8 @@ struct NFCToolsView: View {
                 GeometryReader { geometry in
                     let viewportHeight = max(0, geometry.size.height - keyboardHeight)
                     let contentOverflows = scrollContentHeight > viewportHeight + NFCToolsScrollMetrics.scrollThresholdPadding
-                    /// `scrollDisabled` also blocks `ScrollViewReader.scrollTo`; keep scrolling enabled while the keyboard is up.
-                    let userScrollEnabled = contentOverflows || keyboardHeight > 0
+                    /// `scrollDisabled` also blocks `ScrollViewReader.scrollTo`; keep scrolling enabled while the keyboard is up or until home reset finishes.
+                    let userScrollEnabled = contentOverflows || keyboardHeight > 0 || unlockScrollForDismissReset
 
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 18) {
@@ -105,9 +107,19 @@ struct NFCToolsView: View {
                     }
                 }
             }
-            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-                withAnimation(.easeInOut(duration: 0.25)) {
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { notification in
+                let duration =
+                    (notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? NSNumber)?.doubleValue ?? 0.25
+
+                unlockScrollForDismissReset = true
+
+                withAnimation(.easeInOut(duration: duration)) {
                     keyboardHeight = 0
+                    scrollProxy.scrollTo("nfc-scroll-home", anchor: .top)
+                }
+
+                DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.06) {
+                    unlockScrollForDismissReset = false
                 }
             }
         }
@@ -178,6 +190,7 @@ struct NFCToolsView: View {
             }
         }
         .padding(.horizontal, 24)
+        .id("nfc-scroll-home")
     }
 
     private var legacyHeroSection: some View {

@@ -68,24 +68,25 @@ struct NFCIconButton: View {
                     onLongPress()
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                         isPressed = false
+                        didLongPress = false
                     }
                 }
         )
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    if !isPressed {
-                        withAnimation(.easeIn(duration: 0.08)) {
-                            isPressed = true
-                        }
-                    }
-                }
-                .onEnded { _ in
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                        isPressed = false
-                    }
-                }
-        )
+//        .simultaneousGesture(
+//            DragGesture(minimumDistance: 0)
+//                .onChanged { _ in
+//                    if !isPressed {
+//                        withAnimation(.easeIn(duration: 0.08)) {
+//                            isPressed = true
+//                        }
+//                    }
+//                }
+//                .onEnded { _ in
+//                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+//                        isPressed = false
+//                    }
+//                }
+//        )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(icon.type.label)
         .accessibilityHint("Tap to autofill, press and hold to edit")
