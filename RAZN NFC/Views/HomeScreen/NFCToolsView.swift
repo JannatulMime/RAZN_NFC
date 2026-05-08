@@ -6,14 +6,9 @@
 import SwiftUI
 import UIKit
 
-private enum NFCToolsScrollMetrics {
-    /// SwiftUI layout variance — treat as overflow only when clearly taller than viewport.
-    static let scrollThresholdPadding: CGFloat = 2
-}
-
-private struct NFCToolsScrollContentHeightKey: PreferenceKey {
+/// Captures the input section's natural bottom Y in screen coordinates.
+private struct InputBottomKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
-
     static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
         value = nextValue()
     }
@@ -24,103 +19,81 @@ struct NFCToolsView: View {
     @StateObject private var vm = NFCViewModel()
     @State private var showShare = false
     @State private var keyboardHeight: CGFloat = 0
-    @State private var scrollContentHeight: CGFloat = 0
-    /// Keeps scrolling enabled briefly after hiding the keyboard so `scrollTo` runs before `scrollDisabled` engages (short content).
-    @State private var unlockScrollForDismissReset = false
+    @State private var inputBottomY: CGFloat = 0
 
     private let iconSize: CGFloat = 76
     private var columns: [GridItem] {
         Array(repeating: GridItem(.fixed(iconSize), spacing: 12), count: 4)
     }
 
+    /// Negative offset that lifts only the input section just above the keyboard.
+    /// 0 when the keyboard is hidden or when the input is already above the keyboard.
+    private var inputLift: CGFloat {
+        guard keyboardHeight > 0, inputBottomY > 0 else { return 0 }
+        let keyboardTopY = UIScreen.main.bounds.height - keyboardHeight
+        let overlap = inputBottomY + 12 - keyboardTopY  // 12pt visual margin above keyboard
+        return -max(0, overlap)
+    }
+
     var body: some View {
-        ScrollViewReader { scrollProxy in
-            ZStack(alignment: .bottom) {
-                backgroundView
+        ZStack(alignment: .bottom) {
+            // Background — never resizes or shifts when the keyboard appears.
+            CustomBG()
+                .ignoresSafeArea()
+                .ignoresSafeArea(.keyboard, edges: .all)
 
-                GeometryReader { geometry in
-                    let viewportHeight = max(0, geometry.size.height - keyboardHeight)
-                    let contentOverflows = scrollContentHeight > viewportHeight + NFCToolsScrollMetrics.scrollThresholdPadding
-                    /// `scrollDisabled` also blocks `ScrollViewReader.scrollTo`; keep scrolling enabled while the keyboard is up or until home reset finishes.
-                    let userScrollEnabled = contentOverflows || keyboardHeight > 0 || unlockScrollForDismissReset
-
-                    ScrollView(showsIndicators: false) {
-                        VStack(spacing: 18) {
-                            header
-                            legacyHeroSection
-                            hintText
-                                .padding(.top,40)
-                            iconGrid
-                            inputSection
-                                .id("main-input-section")
-                                .padding(.horizontal, 20)
-                            writeButton
-                                .padding(.horizontal, 20)
-                            discoverButton
-                                .padding(.top,20)
+            // Foreground content — keyboard avoidance is disabled so the view does NOT
+            // shift as a whole. Only the input section is lifted, via .offset below.
+            VStack(spacing: 18) {
+                header
+                legacyHeroSection
+                hintText
+                    .padding(.top, 40)
+                iconGrid
+                inputSection
+                    .padding(.horizontal, 20)
+                    .background(
+                        GeometryReader { proxy in
+                            Color.clear.preference(
+                                key: InputBottomKey.self,
+                                value: proxy.frame(in: .global).maxY
+                            )
                         }
-                        .frame(minHeight: viewportHeight, alignment: .top)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 18)
-                        .padding(.bottom, 40)
-                        .background(
-                            GeometryReader { contentGeo in
-                                Color.clear.preference(
-                                    key: NFCToolsScrollContentHeightKey.self,
-                                    value: contentGeo.size.height
-                                )
-                            }
-                        )
-                    }
-                    .scrollBounceBehavior(.basedOnSize)
-                    .scrollDisabled(!userScrollEnabled)
-                    .onPreferenceChange(NFCToolsScrollContentHeightKey.self) { scrollContentHeight = $0 }
-                }
-                .safeAreaInset(edge: .bottom) {
-                    Color.clear.frame(height: keyboardHeight)
-                }
-
-                if let message = vm.toastMessage {
-                    ToastView(message: message)
-                        .padding(.bottom, 24)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
+                    )
+                    .offset(y: inputLift)
+                    .animation(.easeInOut(duration: 0.25), value: inputLift)
+                writeButton
+                    .padding(.horizontal, 20)
+                discoverButton
+                    .padding(.top, 20)
             }
-            .contentShape(Rectangle())
-            .onTapGesture {
-                dismissKeyboard()
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .padding(.horizontal, 20)
+            .padding(.top, 18)
+            .padding(.bottom, 40)
+            .ignoresSafeArea(.keyboard, edges: .all)
+            .onPreferenceChange(InputBottomKey.self) { inputBottomY = $0 }
+
+            if let message = vm.toastMessage {
+                ToastView(message: message)
+                    .padding(.bottom, 24)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
-                guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else {
-                    return
-                }
-
-                let screenHeight = UIScreen.main.bounds.height
-                let overlap = max(0, screenHeight - frame.origin.y)
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    keyboardHeight = overlap
-                }
-
-                if overlap > 0 {
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        scrollProxy.scrollTo("main-input-section", anchor: .bottom)
-                    }
-                }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            dismissKeyboard()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
+            guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
+            let overlap = max(0, UIScreen.main.bounds.height - frame.origin.y)
+            withAnimation(.easeInOut(duration: 0.25)) {
+                keyboardHeight = overlap
             }
-            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { notification in
-                let duration =
-                    (notification.userInfo?[UIResponder.keyboardAnimationDurationUserInfoKey] as? NSNumber)?.doubleValue ?? 0.25
-
-                unlockScrollForDismissReset = true
-
-                withAnimation(.easeInOut(duration: duration)) {
-                    keyboardHeight = 0
-                    scrollProxy.scrollTo("nfc-scroll-home", anchor: .top)
-                }
-
-                DispatchQueue.main.asyncAfter(deadline: .now() + duration + 0.06) {
-                    unlockScrollForDismissReset = false
-                }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            withAnimation(.easeInOut(duration: 0.25)) {
+                keyboardHeight = 0
             }
         }
         .sheet(item: $vm.selectedSheet) { icon in
@@ -151,10 +124,6 @@ struct NFCToolsView: View {
 
     private func dismissKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-    }
-
-    private var backgroundView: some View {
-        CustomBG()
     }
 
     private var header: some View {
@@ -190,7 +159,6 @@ struct NFCToolsView: View {
             }
         }
         .padding(.horizontal, 24)
-        .id("nfc-scroll-home")
     }
 
     private var legacyHeroSection: some View {
@@ -198,7 +166,6 @@ struct NFCToolsView: View {
             Image("razuAppIcon")
                 .resizable()
                 .frame(width: 200, height: 200)
-                //.offset(y: -70)
                 .padding(.bottom, -60)
         }
     }
@@ -255,7 +222,7 @@ struct NFCToolsView: View {
         }) {
             Text("Write / \(vm.byteCount) bytes")
                 .font(.custom(Constants.Fonts.interBold, size: 20))
-                .foregroundStyle( Color.white )
+                .foregroundStyle(Color.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 17)
                 .background(
@@ -274,8 +241,8 @@ struct NFCToolsView: View {
             InteractionFeedback.tap()
             vm.openDiscover()
         }
-            .font(.custom(Constants.Fonts.interRegular, size: 14))
-            .foregroundStyle(.white.opacity(0.7))
+        .font(.custom(Constants.Fonts.interRegular, size: 14))
+        .foregroundStyle(.white.opacity(0.7))
     }
 }
 
