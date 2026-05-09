@@ -12,12 +12,12 @@ struct InputSectionView: View {
     var pasteEnabled: Bool = true
     var showMiddleClearButton: Bool = false
     var showTrailingOverlayClear: Bool = false
+    /// When set (NFCToolsView only): leading icon swaps to share when input is a valid web URL; tap shares the normalized link string.
+    var onShareLink: ((String) -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 12) {
-            Image(systemName: "link")
-                .font(.system(size: 20, weight: .medium))
-                .foregroundColor(Color(red: 0.62, green: 0.66, blue: 0.72))
+            leadingIcon
 
             HStack(spacing: 8) {
                 TextField(
@@ -93,6 +93,48 @@ struct InputSectionView: View {
                 .stroke(Color.black.opacity(0.06), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.12), radius: 20, x: 0, y: 8)
+    }
+
+    @ViewBuilder
+    private var leadingIcon: some View {
+        let iconTint = Color(red: 0.62, green: 0.66, blue: 0.72)
+        if onShareLink != nil, isValidWebURLInput(text) {
+            Button {
+                InteractionFeedback.tap()
+                onShareLink?(normalizedWebLinkInput(text))
+            } label: {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(iconTint)
+            }
+            .buttonStyle(.plain)
+        } else {
+            Image(systemName: "link")
+                .font(.system(size: 20, weight: .medium))
+                .foregroundColor(iconTint)
+        }
+    }
+
+    /// Mirrors `NFCViewModel.normalizeURLInput` so validation matches write behavior.
+    private func normalizedWebLinkInput(_ raw: String) -> String {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "" }
+        let lowercased = trimmed.lowercased()
+        if lowercased.hasPrefix("http://") ||
+            lowercased.hasPrefix("https://") ||
+            lowercased.hasPrefix("www.") {
+            return trimmed
+        }
+        return "https://\(trimmed)"
+    }
+
+    private func isValidWebURLInput(_ raw: String) -> Bool {
+        let n = normalizedWebLinkInput(raw)
+        guard !n.isEmpty else { return false }
+        guard let url = URL(string: n) else { return false }
+        guard let scheme = url.scheme?.lowercased(), ["http", "https"].contains(scheme) else { return false }
+        guard let host = url.host, !host.isEmpty else { return false }
+        return true
     }
 }
 

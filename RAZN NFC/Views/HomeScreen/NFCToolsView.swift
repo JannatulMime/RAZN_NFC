@@ -18,6 +18,7 @@ struct NFCToolsView: View {
     @Binding var path: [Screens]
     @StateObject private var vm = NFCViewModel()
     @State private var showShare = false
+    @State private var shareActivityItems: [Any] = []
     @State private var keyboardHeight: CGFloat = 0
     @State private var inputBottomY: CGFloat = 0
 
@@ -101,14 +102,13 @@ struct NFCToolsView: View {
                 icon: icon,
                 inputText: $vm.sheetInputText,
                 isSaveEnabled: vm.isSheetSaveEnabled,
-                onSave: vm.saveLink,
-                onCancel: { vm.selectedSheet = nil }
+                onSave: vm.saveLink
             )
             .presentationDetents([.height(360)])
         }
         .sheet(isPresented: $showShare) {
             ShareActivityView(
-                activityItems: [Constants.getAppLink(), "Check this link!"],
+                activityItems: shareActivityItems,
                 excludedActivityTypes: [.assignToContact, .print],
                 onComplete: { _ in }
             )
@@ -149,6 +149,7 @@ struct NFCToolsView: View {
 
             Button(action: {
                 InteractionFeedback.tap()
+                shareActivityItems = [Constants.getAppLink(), "Check this link!"]
                 showShare = true
             }) {
                 Image(systemName: "square.and.arrow.up.fill")
@@ -181,8 +182,9 @@ struct NFCToolsView: View {
             ForEach(vm.icons) { icon in
                 NFCIconButton(
                     icon: icon,
+                    hasLink: icon.hasLink,
+                    isSelected: vm.selectedIconType == icon.type,
                     onTap: {
-                        InteractionFeedback.tap()
                         vm.tap(icon: icon)
                     },
                     onLongPress: {
@@ -208,7 +210,11 @@ struct NFCToolsView: View {
                 vm.mainInputText = ""
             },
             pasteEnabled: true,
-            showTrailingOverlayClear: true
+            showTrailingOverlayClear: true,
+            onShareLink: { normalized in
+                shareActivityItems = [normalized]
+                showShare = true
+            }
         )
         .animation(.easeInOut(duration: 0.2), value: vm.mainInputText)
         .padding(.top, 8)

@@ -6,11 +6,12 @@
 import SwiftUI
 import UIKit
 import Combine
-import AudioToolbox
 
 final class NFCViewModel: ObservableObject {
     @Published var icons: [NFCIcon]
     @Published var mainInputText: String = ""
+    /// Which grid icon’s saved link is reflected in the input field (set on tap when that slot has a link).
+    @Published var selectedIconType: NFCIconType?
     @Published var selectedSheet: NFCIcon?
     @Published var sheetInputText: String = ""
     @Published var toastMessage: String?
@@ -28,6 +29,7 @@ final class NFCViewModel: ObservableObject {
             return NFCIcon(type: type, savedLink: saved)
         }
         bindNFCAlerts()
+        bindSelectionToInput()
     }
 
     var byteCount: Int {
@@ -45,14 +47,15 @@ final class NFCViewModel: ObservableObject {
     }
 
     func tap(icon: NFCIcon) {
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        AudioServicesPlaySystemSound(1104)
         let latestIcon = icons.first(where: { $0.id == icon.id })
             ?? icons.first(where: { $0.type == icon.type })
             ?? icon
-        let value = latestIcon.savedLink?.trimmingCharacters(in: .whitespacesAndNewlines)
-        let linkToFill = (value?.isEmpty == false) ? value : ""
-        let normalized = normalizeURLInput(linkToFill)
+        guard latestIcon.hasLink else { return }
+
+        InteractionFeedback.tap()
+        let value = latestIcon.savedLink?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let normalized = normalizeURLInput(value)
+        selectedIconType = latestIcon.type
         mainInputText = normalized
         if !normalized.isEmpty {
             UIImpactFeedbackGenerator(style: .soft).impactOccurred()
@@ -81,6 +84,10 @@ final class NFCViewModel: ObservableObject {
             var updated = icon
             updated.savedLink = savedLink
             return updated
+        }
+
+        if savedLink == nil, selectedIconType == type {
+            selectedIconType = nil
         }
 
         showToast("Link saved!")
@@ -148,6 +155,24 @@ final class NFCViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    private func bindSelectionToInput() {
+        $mainInputText
+            .receive(on: RunLoop.main)
+            .sink { [weak self] text in
+                guard let self, let sel = self.selectedIconType else { return }
+                guard let icon = self.icons.first(where: { $0.type == sel }) else {
+                    self.selectedIconType = nil
+                    return
+                }
+                let a = self.normalizeURLInput(text)
+                let b = self.normalizeURLInput(icon.savedLink)
+                if a != b {
+                    self.selectedIconType = nil
+                }
+            }
+            .store(in: &cancellables)
     }
 
     private func bindNFCAlerts() {

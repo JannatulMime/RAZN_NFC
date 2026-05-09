@@ -11,7 +11,6 @@ struct EditLinkSheet: View {
     @Binding var inputText: String
     let isSaveEnabled: Bool
     let onSave: () -> Void
-    let onCancel: () -> Void
 
     var body: some View {
         VStack(spacing: 18) {
@@ -56,50 +55,30 @@ struct EditLinkSheet: View {
                 showTrailingOverlayClear: true
             ).padding(.horizontal,20)
 
-            HStack(spacing: 12) {
-                Button(action: {
-                    InteractionFeedback.tap()
-                    onCancel()
-                }) {
-                    Text("Back")
-                        .font(.custom(Constants.Fonts.interRegular, size: 18))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(Color.white.opacity(0.15), lineWidth: 0.8)
-                )
-
-                Button(action: {
-                    InteractionFeedback.tap()
-                    onSave()
-                }) {
-                    Text("Save")
-                        .font(.custom(Constants.Fonts.interRegular, size: 18))
-                        .foregroundStyle(isSaveEnabled ? Color.white : Color.white.opacity(0.55))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .background(
-                    isSaveEnabled ? Color.brandBlue : Color.white.opacity(0.08),
-                    in: RoundedRectangle(cornerRadius: 12, style: .continuous)
-                )
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(isSaveEnabled ? Color.white.opacity(0.18) : Color.white.opacity(0.10), lineWidth: 0.8)
-                )
-                .disabled(!isSaveEnabled)
-                .animation(.easeInOut(duration: 0.2), value: isSaveEnabled)
+            Button(action: {
+                InteractionFeedback.tap()
+                onSave()
+            }) {
+                Text("Save")
+                    .font(.custom(Constants.Fonts.interRegular, size: 18))
+                    .foregroundStyle(isSaveEnabled ? Color.white : Color.white.opacity(0.55))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .contentShape(Rectangle())
             }
-            .padding(.horizontal,20)
+            .buttonStyle(.plain)
+            .background(
+                isSaveEnabled ? Color.brandBlue : Color.white.opacity(0.08),
+                in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+            )
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(isSaveEnabled ? Color.white.opacity(0.18) : Color.white.opacity(0.10), lineWidth: 0.8)
+            )
+            .disabled(!isSaveEnabled)
+            .animation(.easeInOut(duration: 0.2), value: isSaveEnabled)
+            .padding(.horizontal, 20)
 
             Spacer(minLength: 0)
         }
@@ -127,8 +106,7 @@ struct EditLinkSheet_Previews: PreviewProvider {
             icon: NFCIcon(type: .custom, savedLink: nil),
             inputText: .constant("https://example.com"),
             isSaveEnabled: true,
-            onSave: {},
-            onCancel: {}
+            onSave: {}
         )
         .preferredColorScheme(.dark)
     }
