@@ -14,11 +14,19 @@ private struct InputBottomKey: PreferenceKey {
     }
 }
 
+/// Identifiable wrapper so the share sheet is driven by `.sheet(item:)`.
+/// This guarantees SwiftUI evaluates the sheet body with the items already
+/// in place, avoiding the first-tap "empty share sheet" race that occurs
+/// when using `.sheet(isPresented:)` together with a separate items state.
+private struct ShareItems: Identifiable {
+    let id = UUID()
+    let items: [Any]
+}
+
 struct NFCToolsView: View {
     @Binding var path: [Screens]
     @StateObject private var vm = NFCViewModel()
-    @State private var showShare = false
-    @State private var shareActivityItems: [Any] = []
+    @State private var shareItems: ShareItems?
     @State private var keyboardHeight: CGFloat = 0
     @State private var inputBottomY: CGFloat = 0
 
@@ -106,9 +114,9 @@ struct NFCToolsView: View {
             )
             .presentationDetents([.height(360)])
         }
-        .sheet(isPresented: $showShare) {
+        .sheet(item: $shareItems) { share in
             ShareActivityView(
-                activityItems: shareActivityItems,
+                activityItems: share.items,
                 excludedActivityTypes: [.assignToContact, .print],
                 onComplete: { _ in }
             )
@@ -203,8 +211,7 @@ struct NFCToolsView: View {
             pasteEnabled: true,
             showTrailingOverlayClear: true,
             onShareLink: { normalized in
-                shareActivityItems = [normalized]
-                showShare = true
+                shareItems = ShareItems(items: [normalized])
             }
         )
         .animation(.easeInOut(duration: 0.2), value: vm.mainInputText)
