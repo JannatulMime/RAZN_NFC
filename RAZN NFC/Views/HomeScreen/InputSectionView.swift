@@ -105,7 +105,7 @@ struct InputSectionView: View {
             } label: {
                 Image(systemName: "square.and.arrow.up")
                     .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(iconTint)
+                    .foregroundColor(Color.brandBlue)
             }
             .buttonStyle(.plain)
         } else {

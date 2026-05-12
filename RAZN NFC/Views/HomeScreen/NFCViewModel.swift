@@ -43,7 +43,9 @@ final class NFCViewModel: ObservableObject {
 
     var isSheetSaveEnabled: Bool {
         let t = sheetInputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return !t.isEmpty
+        if !t.isEmpty { return true }
+        // Allow saving an empty field only when clearing an existing stored URL.
+        return selectedSheet?.hasLink == true
     }
 
     func tap(icon: NFCIcon) {

@@ -147,17 +147,8 @@ struct NFCToolsView: View {
 
             Spacer()
 
-            Button(action: {
-                InteractionFeedback.tap()
-                shareActivityItems = [Constants.getAppLink(), "Check this link!"]
-                showShare = true
-            }) {
-                Image(systemName: "square.and.arrow.up.fill")
-                    .foregroundStyle(.white.opacity(0.85))
-                    .frame(width: 44, height: 44)
-                    .background(Color.white.opacity(0.08))
-                    .clipShape(Circle())
-            }
+            // Invisible balance for the leading gear button so "WELCOME" stays centered.
+            Color.clear.frame(width: 44, height: 44)
         }
         .padding(.horizontal, 24)
     }
@@ -226,7 +217,7 @@ struct NFCToolsView: View {
             InteractionFeedback.tap()
             vm.writeNFC()
         }) {
-            Text("Write / \(vm.byteCount) bytes")
+            Text("Write")
                 .font(.custom(Constants.Fonts.interBold, size: 20))
                 .foregroundStyle(Color.white)
                 .frame(maxWidth: .infinity)
