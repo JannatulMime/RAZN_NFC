@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		9685DA482FB757F600C7F36A /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 9685DA472FB757F600C7F36A /* FirebaseAnalytics */; };
+		9685DA4A2FB757F600C7F36A /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = 9685DA492FB757F600C7F36A /* FirebaseAnalyticsCore */; };
+		9685DA4C2FB757F600C7F36A /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 9685DA4B2FB757F600C7F36A /* FirebaseCore */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		F32C47F12E44E9B400869305 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -39,6 +45,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9685DA482FB757F600C7F36A /* FirebaseAnalytics in Frameworks */,
+				9685DA4C2FB757F600C7F36A /* FirebaseCore in Frameworks */,
+				9685DA4A2FB757F600C7F36A /* FirebaseAnalyticsCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -90,6 +99,9 @@
 			);
 			name = "RAZN NFC";
 			packageProductDependencies = (
+				9685DA472FB757F600C7F36A /* FirebaseAnalytics */,
+				9685DA492FB757F600C7F36A /* FirebaseAnalyticsCore */,
+				9685DA4B2FB757F600C7F36A /* FirebaseCore */,
 			);
 			productName = "RAZN NFC";
 			productReference = F32C47B42E44E9B200869305 /* RAZN NFC.app */;
@@ -142,6 +154,9 @@
 			);
 			mainGroup = F32C47AB2E44E9B200869305;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				9685DA462FB757F600C7F36A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F32C47B52E44E9B200869305 /* Products */;
 			projectDirPath = "";
@@ -474,6 +489,35 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		9685DA462FB757F600C7F36A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.13.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		9685DA472FB757F600C7F36A /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9685DA462FB757F600C7F36A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		9685DA492FB757F600C7F36A /* FirebaseAnalyticsCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9685DA462FB757F600C7F36A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsCore;
+		};
+		9685DA4B2FB757F600C7F36A /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9685DA462FB757F600C7F36A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = F32C47AC2E44E9B200869305 /* Project object */;
 }

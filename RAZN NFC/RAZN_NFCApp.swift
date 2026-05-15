@@ -6,10 +6,12 @@
 //
 
 import SwiftUI
+import FirebaseCore
 
 @main
 struct RAZN_NFCApp: App {
     init() {
+        FirebaseApp.configure()
         for family in UIFont.familyNames {
             print("Family: \(family)")
             for name in UIFont.fontNames(forFamilyName: family) {
