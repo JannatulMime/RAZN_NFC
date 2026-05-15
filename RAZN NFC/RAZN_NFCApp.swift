@@ -12,12 +12,14 @@ import FirebaseCore
 struct RAZN_NFCApp: App {
     init() {
         FirebaseApp.configure()
-        for family in UIFont.familyNames {
-            print("Family: \(family)")
-            for name in UIFont.fontNames(forFamilyName: family) {
-                print("  Font: \(name)")
-            }
-        }
+        print("Firebase App configured")
+        FirebaseAnalyticsManager.shared.track(.appOpened)
+//        for family in UIFont.familyNames {
+//            print("Family: \(family)")
+//            for name in UIFont.fontNames(forFamilyName: family) {
+//                print("  Font: \(name)")
+//            }
+//        }
     }
 
     var body: some Scene {

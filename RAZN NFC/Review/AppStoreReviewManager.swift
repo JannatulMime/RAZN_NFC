@@ -94,6 +94,7 @@ final class AppStoreReviewManager {
     }
 
     private func requestStoreReview() {
+        FirebaseAnalyticsManager.shared.track(.reviewPopupShown)
         let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
         let scene =
             scenes.first(where: { $0.activationState == .foregroundActive })

@@ -18,6 +18,7 @@ final class FirebaseAnalyticsManager {
 
     func track(_ event: AnalyticsEvent) {
 
+        print("Analytics Tracked \(event.eventName) ")
         Analytics.logEvent(
             event.eventName,
             parameters: event.parameters

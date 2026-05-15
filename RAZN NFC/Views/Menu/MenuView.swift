@@ -46,6 +46,13 @@ struct MenuView: View {
         nfcReader.write(text, completion: { isSuccess in
             print("U>> write isSuccess \(isSuccess)")
 
+            Task { @MainActor in
+                if isSuccess {
+                    FirebaseAnalyticsManager.shared.track(.successfulNFCWrite)
+                    AppStoreReviewManager.shared.recordNFCWrite()
+                }
+            }
+
             if text.isValidURLString() {
                 print("Valid Url")
                 writeTag(text: nfcWriteInfoVM.getfullURL())

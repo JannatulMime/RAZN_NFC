@@ -55,6 +55,9 @@ final class NFCViewModel: ObservableObject {
         guard latestIcon.hasLink else { return }
 
         InteractionFeedback.tap()
+        FirebaseAnalyticsManager.shared.track(
+            .selectedQuickButtonCategory(category: latestIcon.type.label)
+        )
         let value = latestIcon.savedLink?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let normalized = normalizeURLInput(value)
         selectedIconType = latestIcon.type
@@ -121,6 +124,7 @@ final class NFCViewModel: ObservableObject {
             Task { @MainActor in
                 guard let self else { return }
                 if isSuccess {
+                    FirebaseAnalyticsManager.shared.track(.successfulNFCWrite)
                     self.showToast("NFC write complete (\(payload.utf8.count) bytes)")
                     AppStoreReviewManager.shared.recordNFCWrite()
                 } else {
