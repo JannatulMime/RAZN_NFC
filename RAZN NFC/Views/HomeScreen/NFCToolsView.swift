@@ -128,6 +128,9 @@ struct NFCToolsView: View {
         } message: {
             Text(vm.nfcAlertMessage)
         }
+        .onAppear {
+            AppStoreReviewManager.shared.recordAppLaunch()
+        }
     }
 
     private func dismissKeyboard() {
@@ -155,8 +158,21 @@ struct NFCToolsView: View {
 
             Spacer()
 
+            #if DEBUG
+            Button {
+                AppStoreReviewManager.shared.resetForTesting()
+                AppStoreReviewManager.shared.requestStoreKitReviewForDebug()
+            } label: {
+                Image(systemName: "star.bubble")
+                    .foregroundStyle(.white.opacity(0.8))
+                    .frame(width: 44, height: 44)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(Circle())
+            }
+            #else
             // Invisible balance for the leading gear button so "WELCOME" stays centered.
             Color.clear.frame(width: 44, height: 44)
+            #endif
         }
         .padding(.horizontal, 24)
     }

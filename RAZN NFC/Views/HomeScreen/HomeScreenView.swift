@@ -14,23 +14,20 @@ enum Screens: Hashable {
 
 struct RootView: View {
     @State private var path: [Screens] = []
-   
+
     var body: some View {
         NavigationStack(path: $path) {
             HomeScreenView(path: $path)
-            .navigationDestination(for: Screens.self) { screen in
-                switch screen {
-                case .Home: HomeScreenView(path: $path)
-                case .Menu: MenuView(path: $path)
-                case .AddField: AddFieledView(path: $path)
-                case .AddUrl: AddURLFieldView(path: $path)
+                .navigationDestination(for: Screens.self) { screen in
+                    switch screen {
+                    case .Home: HomeScreenView(path: $path)
+                    case .Menu: MenuView(path: $path)
+                    case .AddField: AddFieledView(path: $path)
+                    case .AddUrl: AddURLFieldView(path: $path)
+                    }
                 }
-            }
-        } 
-
+        }
     }
-    
-    
 }
 
 struct HomeScreenView: View {

@@ -6,8 +6,19 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		F32C47F12E44E9B400869305 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F32C47AC2E44E9B200869305 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F32C47B32E44E9B200869305;
+			remoteInfo = "RAZN NFC";
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		F32C47B42E44E9B200869305 /* RAZN NFC.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RAZN NFC.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F32C47EE2E44E9B400869305 /* RAZN NFCTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "RAZN NFCTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -16,10 +27,22 @@
 			path = "RAZN NFC";
 			sourceTree = "<group>";
 		};
+		F32C47EF2E44E9B400869305 /* RAZN NFCTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "RAZN NFCTests";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		F32C47B12E44E9B200869305 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F32C47F72E44E9B400869305 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -33,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				F32C47B62E44E9B200869305 /* RAZN NFC */,
+				F32C47EF2E44E9B400869305 /* RAZN NFCTests */,
 				F32C47B52E44E9B200869305 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -41,6 +65,7 @@
 			isa = PBXGroup;
 			children = (
 				F32C47B42E44E9B200869305 /* RAZN NFC.app */,
+				F32C47EE2E44E9B400869305 /* RAZN NFCTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -69,6 +94,29 @@
 			productName = "RAZN NFC";
 			productReference = F32C47B42E44E9B200869305 /* RAZN NFC.app */;
 			productType = "com.apple.product-type.application";
+		};
+		F32C47F02E44E9B400869305 /* RAZN NFCTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F32C47F32E44E9B400869305 /* Build configuration list for PBXNativeTarget "RAZN NFCTests" */;
+			buildPhases = (
+				F32C47F62E44E9B400869305 /* Sources */,
+				F32C47F72E44E9B400869305 /* Frameworks */,
+				F32C47F82E44E9B400869305 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F32C47F22E44E9B400869305 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				F32C47EF2E44E9B400869305 /* RAZN NFCTests */,
+			);
+			name = "RAZN NFCTests";
+			packageProductDependencies = (
+			);
+			productName = "RAZN NFCTests";
+			productReference = F32C47EE2E44E9B400869305 /* RAZN NFCTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -100,12 +148,20 @@
 			projectRoot = "";
 			targets = (
 				F32C47B32E44E9B200869305 /* RAZN NFC */,
+				F32C47F02E44E9B400869305 /* RAZN NFCTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		F32C47B22E44E9B200869305 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F32C47F82E44E9B400869305 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -122,7 +178,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		F32C47F62E44E9B400869305 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		F32C47F22E44E9B400869305 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F32C47B32E44E9B200869305 /* RAZN NFC */;
+			targetProxy = F32C47F12E44E9B400869305 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		F32C47C02E44E9B300869305 /* Debug */ = {
@@ -320,6 +391,58 @@
 			};
 			name = Release;
 		};
+		F32C47F42E44E9B400869305 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 15;
+				DEVELOPMENT_TEAM = H552WM8224;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 4.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.razvanVladutChiricia.RAZNNFCTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RAZN NFC.app/RAZN NFC";
+			};
+			name = Debug;
+		};
+		F32C47F52E44E9B400869305 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 15;
+				DEVELOPMENT_TEAM = H552WM8224;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 4.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.razvanVladutChiricia.RAZNNFCTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/RAZN NFC.app/RAZN NFC";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -337,6 +460,15 @@
 			buildConfigurations = (
 				F32C47C32E44E9B300869305 /* Debug */,
 				F32C47C42E44E9B300869305 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F32C47F32E44E9B400869305 /* Build configuration list for PBXNativeTarget "RAZN NFCTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F32C47F42E44E9B400869305 /* Debug */,
+				F32C47F52E44E9B400869305 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

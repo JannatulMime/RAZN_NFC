@@ -118,11 +118,14 @@ final class NFCViewModel: ObservableObject {
         }
 
         nfcReader.write(payload) { [weak self] isSuccess in
-            guard let self else { return }
-            if isSuccess {
-                self.showToast("NFC write complete (\(payload.utf8.count) bytes)")
-            } else {
-                self.showToast("NFC write failed")
+            Task { @MainActor in
+                guard let self else { return }
+                if isSuccess {
+                    self.showToast("NFC write complete (\(payload.utf8.count) bytes)")
+                    AppStoreReviewManager.shared.recordNFCWrite()
+                } else {
+                    self.showToast("NFC write failed")
+                }
             }
         }
     }
