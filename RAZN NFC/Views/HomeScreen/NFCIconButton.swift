@@ -104,6 +104,7 @@ struct NFCIconButton: View {
                             guard !Task.isCancelled else { return }
                             withAnimation(.easeIn(duration: 0.08)) {
                                 isLongPressHeld = true
+                                
                             }
                         }
                     }
@@ -113,6 +114,7 @@ struct NFCIconButton: View {
                     longPressHighlightTask = nil
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                         isTapPressed = false
+                        isLongPressHeld = false
                         isLongPressHeld = false
                     }
                 }
