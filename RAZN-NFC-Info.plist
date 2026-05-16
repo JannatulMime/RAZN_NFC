@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>FirebaseAutomaticScreenReportingEnabled</key>
-	<string>NO</string>
+	<string>YES</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Croogla4F.ttf</string>
