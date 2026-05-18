@@ -36,16 +36,16 @@ final class AppStoreReviewManager {
         evaluateAfterAppLaunch()
     }
 
-    #if DEBUG
-    func resetForTesting() {
-        ReviewDefaultsKey.allCases.forEach { removeValue(for: $0) }
-    }
-
-    /// Presents StoreKit’s in-app review UI immediately (for design/debug on device/simulator).
-    func requestStoreKitReviewForDebug() {
-        requestStoreReview()
-    }
-    #endif
+//    #if DEBUG
+//    func resetForTesting() {
+//        ReviewDefaultsKey.allCases.forEach { removeValue(for: $0) }
+//    }
+//
+//    /// Presents StoreKit’s in-app review UI immediately (for design/debug on device/simulator).
+//    func requestStoreKitReviewForDebug() {
+//        requestStoreReview()
+//    }
+//    #endif
 
     // MARK: - Private
 
@@ -82,7 +82,11 @@ final class AppStoreReviewManager {
         let shown = integer(for: .promptShownCount) + 1
         set(shown, for: .promptShownCount)
         set(clock(), for: .lastPromptDate)
-        requestStoreReview()
+
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            requestStoreReview()
+        }
     }
 
     private func hasMetDayCadence(since lastPromptDate: Date) -> Bool {
