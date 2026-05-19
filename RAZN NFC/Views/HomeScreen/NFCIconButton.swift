@@ -97,6 +97,7 @@ struct NFCIconButton: View {
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in
+                    
                     if hasLink {
                         if !isTapPressed {
                             withAnimation(.easeIn(duration: 0.08)) {
@@ -117,6 +118,8 @@ struct NFCIconButton: View {
                 .onEnded { _ in
                     longPressHighlightTask?.cancel()
                     longPressHighlightTask = nil
+                    
+                    
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                         isTapPressed = false
                         isLongPressHeld = false

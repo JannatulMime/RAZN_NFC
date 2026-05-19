@@ -180,7 +180,8 @@ struct NFCToolsView: View {
             .scaledToFit()
             .frame(width: 150, height: 150)
             .frame(maxWidth: .infinity)
-            .padding(.bottom, -40)
+            .padding(.bottom, 20)
+            .padding(.top,40)
     }
 
     private var hintText: some View {
