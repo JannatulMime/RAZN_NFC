@@ -6,11 +6,40 @@
 import SwiftUI
 import UIKit
 
-/// Captures the input section's natural bottom Y in screen coordinates.
-private struct InputBottomKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
+/// Reports the input section bottom edge in the key window's coordinate space.
+private struct InputBottomReader: UIViewRepresentable {
+    var keyboardTopY: CGFloat?
+    var onBottomYChange: (CGFloat) -> Void
+
+    func makeUIView(context: Context) -> FrameReportingView {
+        let view = FrameReportingView()
+        view.onFrameInWindow = { frame in
+            onBottomYChange(frame.maxY)
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: FrameReportingView, context: Context) {
+        uiView.onFrameInWindow = { frame in
+            onBottomYChange(frame.maxY)
+        }
+        // Re-measure when the keyboard frame changes.
+        _ = keyboardTopY
+        uiView.reportFrameInWindow()
+    }
+}
+
+private final class FrameReportingView: UIView {
+    var onFrameInWindow: ((CGRect) -> Void)?
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        reportFrameInWindow()
+    }
+
+    func reportFrameInWindow() {
+        guard let window else { return }
+        onFrameInWindow?(convert(bounds, to: window))
     }
 }
 
@@ -27,21 +56,23 @@ struct NFCToolsView: View {
     @Binding var path: [Screens]
     @StateObject private var vm = NFCViewModel()
     @State private var shareItems: ShareItems?
-    @State private var keyboardHeight: CGFloat = 0
-    @State private var inputBottomY: CGFloat = 0
+    @State private var keyboardTopY: CGFloat?
+    /// Input bottom Y in window space while the keyboard is hidden (not affected by `.offset`).
+    @State private var inputBottomYAtRest: CGFloat = 0
+    @State private var latestInputBottomY: CGFloat = 0
 
     private let iconSize: CGFloat = 76
+    /// Space between the input section bottom and the top of the keyboard.
+    private let keyboardGapAboveKeyboard: CGFloat = 0
     private var columns: [GridItem] {
         Array(repeating: GridItem(.fixed(iconSize), spacing: 12), count: 4)
     }
 
-    /// Negative offset that lifts only the input section just above the keyboard.
-    /// 0 when the keyboard is hidden or when the input is already above the keyboard.
+    /// Negative offset that places the input section `keyboardGapAboveKeyboard` above the keyboard.
     private var inputLift: CGFloat {
-        guard keyboardHeight > 0, inputBottomY > 0 else { return 0 }
-        let keyboardTopY = UIScreen.main.bounds.height - keyboardHeight
-        let overlap = inputBottomY + 12 - keyboardTopY  // 12pt visual margin above keyboard
-        return -max(0, overlap)
+        guard let keyboardTop = keyboardTopY, inputBottomYAtRest > 0 else { return 0 }
+        let targetBottomY = keyboardTop - keyboardGapAboveKeyboard
+        return min(0, targetBottomY - inputBottomYAtRest)
     }
 
     var body: some View {
@@ -52,27 +83,33 @@ struct NFCToolsView: View {
                 .ignoresSafeArea(.keyboard, edges: .all)
 
             // Foreground content — keyboard avoidance is disabled so the view does NOT
-            // shift as a whole. Only the input section is lifted, via .offset below.
+            // shift as a whole. Everything above Explore lifts together via .offset below.
             VStack(spacing: 18) {
-                header
-                legacyHeroSection
-                hintText
-                    .padding(.top, 40)
-                iconGrid
-                inputSection
-                    .padding(.horizontal, 20)
-                    .background(
-                        GeometryReader { proxy in
-                            Color.clear.preference(
-                                key: InputBottomKey.self,
-                                value: proxy.frame(in: .global).maxY
+                VStack(spacing: 18) {
+                    header
+                    legacyHeroSection
+                    hintText
+                        .padding(.top, 40)
+                    iconGrid
+                    VStack(spacing: 18) {
+                        inputSection
+                            .background(
+                                InputBottomReader(keyboardTopY: keyboardTopY) { bottomY in
+                                    latestInputBottomY = bottomY
+                                    // Only track the resting position; measuring after `.offset` would cancel the lift.
+                                    guard keyboardTopY == nil else { return }
+                                    if abs(bottomY - inputBottomYAtRest) > 0.5 {
+                                        inputBottomYAtRest = bottomY
+                                    }
+                                }
                             )
-                        }
-                    )
-                    .offset(y: inputLift)
-                    .animation(.easeInOut(duration: 0.25), value: inputLift)
-                writeButton
+                        writeButton
+                    }
                     .padding(.horizontal, 20)
+                }
+                .offset(y: inputLift)
+                .animation(.easeInOut(duration: 0.25), value: inputLift)
+
                 discoverButton
                     .padding(.top, 20)
             }
@@ -81,7 +118,6 @@ struct NFCToolsView: View {
             .padding(.top, 18)
             .padding(.bottom, 40)
             .ignoresSafeArea(.keyboard, edges: .all)
-            .onPreferenceChange(InputBottomKey.self) { inputBottomY = $0 }
 
             if let message = vm.toastMessage {
                 ToastView(message: message)
@@ -94,15 +130,17 @@ struct NFCToolsView: View {
             dismissKeyboard()
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
-            guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
-            let overlap = max(0, UIScreen.main.bounds.height - frame.origin.y)
+            let topY = Self.keyboardTopInKeyWindow(from: notification)
             withAnimation(.easeInOut(duration: 0.25)) {
-                keyboardHeight = overlap
+                if topY != nil, inputBottomYAtRest <= 0, latestInputBottomY > 0 {
+                    inputBottomYAtRest = latestInputBottomY
+                }
+                keyboardTopY = topY
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             withAnimation(.easeInOut(duration: 0.25)) {
-                keyboardHeight = 0
+                keyboardTopY = nil
             }
         }
         .sheet(item: $vm.selectedSheet) { icon in
@@ -135,6 +173,28 @@ struct NFCToolsView: View {
 
     private func dismissKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+
+    /// Converts the keyboard's end frame into the key window coordinate space (matches `InputBottomReader`).
+    private static func keyboardTopInKeyWindow(from notification: Notification) -> CGFloat? {
+        guard let screenFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else {
+            return nil
+        }
+        let screenHeight = UIScreen.main.bounds.height
+        guard screenFrame.minY < screenHeight - 1 else { return nil }
+
+        guard let window = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .first(where: { $0.activationState == .foregroundActive })?
+            .keyWindow
+        else {
+            return screenFrame.minY
+        }
+
+        return window.convert(
+            CGPoint(x: 0, y: screenFrame.minY),
+            from: window.screen.coordinateSpace
+        ).y
     }
 
     private var header: some View {
