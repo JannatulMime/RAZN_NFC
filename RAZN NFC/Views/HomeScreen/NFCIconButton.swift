@@ -17,10 +17,9 @@ struct NFCIconButton: View {
     @State private var isTapPressed: Bool = false
     /// After hold threshold when there is no link — long-press feedback only, not tap.
     @State private var isLongPressHeld: Bool = false
-    @State private var longPressHighlightTask: Task<Void, Never>?
     @State private var didLongPress: Bool = false
     private let cornerRadius: CGFloat = 22
-    private static let longPressMinimumDuration: UInt64 = 400_000_000
+    private static let longPressDuration: Double = 0.4
 
     private var accentColor: Color {
         isSelected ? Color.brandBlue : .black
@@ -68,69 +67,55 @@ struct NFCIconButton: View {
         .scaleEffect(showPressEffect ? 0.88 : 1.0)
         .opacity(showPressEffect ? 0.75 : 1.0)
         .animation(.easeIn(duration: 0.08), value: showPressEffect)
-        .onTapGesture {
-            if didLongPress {
-                didLongPress = false
-                return
-            }
-            onTap()
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                isTapPressed = false
-            }
-        }
-        .simultaneousGesture(
-            LongPressGesture(minimumDuration: 0.4)
-                .onEnded { _ in
-                    didLongPress = true
-                    onLongPress()
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-//                        isTapPressed = false
-//                        didLongPress = false
-                        
-                        isTapPressed = false
-                        isLongPressHeld = false
-                        isLongPressHeld = false
-                        didLongPress = false
-                    }
+        .onLongPressGesture(
+            minimumDuration: Self.longPressDuration,
+            maximumDistance: .infinity,
+            pressing: { isPressing in
+                if isPressing {
+                    beginPress()
+                } else {
+                    endPress()
                 }
-        )
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    
-                    if hasLink {
-                        if !isTapPressed {
-                            withAnimation(.easeIn(duration: 0.08)) {
-                                isTapPressed = true
-                            }
-                        }
-                    } else if longPressHighlightTask == nil {
-                        longPressHighlightTask = Task { @MainActor in
-                            try? await Task.sleep(nanoseconds: Self.longPressMinimumDuration)
-                            guard !Task.isCancelled else { return }
-                            withAnimation(.easeIn(duration: 0.08)) {
-                                isLongPressHeld = true
-                                
-                            }
-                        }
-                    }
-                }
-                .onEnded { _ in
-                    longPressHighlightTask?.cancel()
-                    longPressHighlightTask = nil
-                    
-                    
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
-                        isTapPressed = false
-                        isLongPressHeld = false
-                        isLongPressHeld = false
-                        didLongPress = false
-                    }
-                }
+            },
+            perform: triggerLongPress
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(icon.type.label)
         .accessibilityHint("Tap to autofill, press and hold to edit")
+    }
+
+    private func beginPress() {
+        guard !didLongPress else { return }
+
+        if hasLink {
+            withAnimation(.easeIn(duration: 0.08)) {
+                isTapPressed = true
+            }
+        }
+    }
+
+    private func triggerLongPress() {
+        didLongPress = true
+        onLongPress()
+        withAnimation(.easeIn(duration: 0.08)) {
+            if hasLink {
+                isTapPressed = false
+            } else {
+                isLongPressHeld = true
+            }
+        }
+    }
+
+    private func endPress() {
+        if !didLongPress {
+            onTap()
+        }
+
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+            isTapPressed = false
+            isLongPressHeld = false
+        }
+        didLongPress = false
     }
 
 }
