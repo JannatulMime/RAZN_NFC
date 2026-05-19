@@ -84,7 +84,12 @@ struct NFCIconButton: View {
                     didLongPress = true
                     onLongPress()
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+//                        isTapPressed = false
+//                        didLongPress = false
+                        
                         isTapPressed = false
+                        isLongPressHeld = false
+                        isLongPressHeld = false
                         didLongPress = false
                     }
                 }
@@ -116,6 +121,7 @@ struct NFCIconButton: View {
                         isTapPressed = false
                         isLongPressHeld = false
                         isLongPressHeld = false
+                        didLongPress = false
                     }
                 }
         )
