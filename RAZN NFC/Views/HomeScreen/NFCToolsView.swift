@@ -138,56 +138,53 @@ struct NFCToolsView: View {
     }
 
     private var header: some View {
-        HStack {
-            Button(action: {
-                InteractionFeedback.tap()
-            }) {
-                Image(systemName: "gearshape.fill")
-                    .foregroundStyle(.white.opacity(0.8))
-                    .frame(width: 44, height: 44)
-                    .background(Color.white.opacity(0.08))
-                    .clipShape(Circle())
-            }
-
-            Spacer()
-
+        ZStack {
             Text("WELCOME")
                 .font(.custom(Constants.Fonts.interRegular, size: 16))
                 .kerning(1.2)
                 .foregroundStyle(.white)
 
-            Spacer()
+            HStack {
+                Button(action: {
+                    InteractionFeedback.tap()
+                }) {
+                    Image(systemName: "gearshape.fill")
+                        .foregroundStyle(.white.opacity(0.8))
+                        .frame(width: 44, height: 44)
+                        .background(Color.white.opacity(0.08))
+                        .clipShape(Circle())
+                }
 
-//            #if DEBUG
-//            Button {
-//                AppStoreReviewManager.shared.resetForTesting()
-//                AppStoreReviewManager.shared.requestStoreKitReviewForDebug()
-//            } label: {
-//                Image(systemName: "star.bubble")
-//                    .foregroundStyle(.white.opacity(0.8))
-//                    .frame(width: 44, height: 44)
-//                    .background(Color.white.opacity(0.08))
-//                    .clipShape(Circle())
-//            }
-//            #else
-//            // Invisible balance for the leading gear button so "WELCOME" stays centered.
-//            Color.clear.frame(width: 44, height: 44)
-//            #endif
+                Spacer()
+
+                Button(action: {
+                    InteractionFeedback.tap()
+                    vm.openInstagram()
+                }) {
+                    Image("instagram_icon_toolbar")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 22, height: 22)
+                        .frame(width: 44, height: 44)
+                        .background(Color.white.opacity(0.08))
+                        .clipShape(Circle())
+                }
+            }
         }
         .padding(.horizontal, 24)
     }
 
     private var legacyHeroSection: some View {
-        VStack(spacing: 0) {
-            Image("razuAppIcon")
-                .resizable()
-                .frame(width: 200, height: 200)
-                .padding(.bottom, -60)
-        }
+        Image("Razn_logo_home")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 150, height: 150)
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, -40)
     }
 
     private var hintText: some View {
-        Text("Press and hold to edit")
+        Text("Hold to save your link")
             .font(.custom(Constants.Fonts.interRegular, size: 13))
             .foregroundStyle(.white.opacity(0.6))
     }
@@ -210,7 +207,6 @@ struct NFCToolsView: View {
                 .frame(width: iconSize)
             }
         }
-        .padding(.horizontal, 20)
     }
 
     private var inputSection: some View {
@@ -257,7 +253,7 @@ struct NFCToolsView: View {
     }
 
     private var discoverButton: some View {
-        Button("Discover") {
+        Button("Explore") {
             InteractionFeedback.tap()
             vm.openDiscover()
         }

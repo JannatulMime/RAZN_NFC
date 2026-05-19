@@ -142,6 +142,14 @@ final class NFCViewModel: ObservableObject {
         UIApplication.shared.open(url)
     }
 
+    func openInstagram() {
+        guard let url = URL(string: "https://www.instagram.com/razn.it?igsh=MWZnbHd3ajR1bGh6NQ%3D%3D&utm_source=qr") else {
+            showToast("Unable to open Instagram link")
+            return
+        }
+        UIApplication.shared.open(url)
+    }
+
     func dismissToast() {
         toastTask?.cancel()
         withAnimation {
