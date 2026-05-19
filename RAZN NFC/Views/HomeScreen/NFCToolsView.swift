@@ -200,7 +200,7 @@ struct NFCToolsView: View {
     private var header: some View {
         ZStack {
             Text("WELCOME")
-                .font(.custom(Constants.Fonts.interRegular, size: 16))
+                .font(.custom(Constants.Fonts.interRegular, size: 12))
                 .kerning(1.2)
                 .foregroundStyle(.white)
 
@@ -225,7 +225,7 @@ struct NFCToolsView: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 22, height: 22)
-                        .frame(width: 44, height: 44)
+                        .frame(width: 38, height: 38)
                         .background(Color.white.opacity(0.08))
                         .clipShape(Circle())
                 }
@@ -238,7 +238,7 @@ struct NFCToolsView: View {
         Image("Razn_logo_home")
             .resizable()
             .scaledToFit()
-            .frame(width: 150, height: 150)
+            .frame(width: 130, height: 130)
             .frame(maxWidth: .infinity)
             .padding(.bottom, 20)
             .padding(.top,40)
