@@ -27,6 +27,8 @@ struct RootView: View {
                     }
                 }
         }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .keyboardLayoutLocked()
     }
 }
 

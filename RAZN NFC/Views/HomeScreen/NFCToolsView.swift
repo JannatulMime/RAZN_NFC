@@ -6,14 +6,6 @@
 import SwiftUI
 import UIKit
 
-/// Captures the input section's natural bottom Y in screen coordinates.
-private struct InputBottomKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
 /// Identifiable wrapper so the share sheet is driven by `.sheet(item:)`.
 /// This guarantees SwiftUI evaluates the sheet body with the items already
 /// in place, avoiding the first-tap "empty share sheet" race that occurs
@@ -27,61 +19,40 @@ struct NFCToolsView: View {
     @Binding var path: [Screens]
     @StateObject private var vm = NFCViewModel()
     @State private var shareItems: ShareItems?
-    @State private var keyboardHeight: CGFloat = 0
-    @State private var inputBottomY: CGFloat = 0
 
-    private let iconSize: CGFloat = 76
+    private let iconSize: CGFloat = 64
     private var columns: [GridItem] {
-        Array(repeating: GridItem(.fixed(iconSize), spacing: 12), count: 4)
-    }
-
-    /// Negative offset that lifts only the input section just above the keyboard.
-    /// 0 when the keyboard is hidden or when the input is already above the keyboard.
-    private var inputLift: CGFloat {
-        guard keyboardHeight > 0, inputBottomY > 0 else { return 0 }
-        let keyboardTopY = UIScreen.main.bounds.height - keyboardHeight
-        let overlap = inputBottomY + 12 - keyboardTopY  // 12pt visual margin above keyboard
-        return -max(0, overlap)
+        Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
     }
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            // Background — never resizes or shifts when the keyboard appears.
-            CustomBG()
+//            CustomBG()
+            Color.black
                 .ignoresSafeArea()
-                .ignoresSafeArea(.keyboard, edges: .all)
 
-            // Foreground content — keyboard avoidance is disabled so the view does NOT
-            // shift as a whole. Only the input section is lifted, via .offset below.
             VStack(spacing: 18) {
                 header
                 legacyHeroSection
-                hintText
-                    .padding(.top, 40)
-                iconGrid
+
+                Spacer()
                 inputSection
                     .padding(.horizontal, 20)
-                    .background(
-                        GeometryReader { proxy in
-                            Color.clear.preference(
-                                key: InputBottomKey.self,
-                                value: proxy.frame(in: .global).maxY
-                            )
-                        }
-                    )
-                    .offset(y: inputLift)
-                    .animation(.easeInOut(duration: 0.25), value: inputLift)
                 writeButton
                     .padding(.horizontal, 20)
+                    .padding(.bottom,40)
+
+                iconGrid
+                    .padding(.horizontal, 20)
+                    .padding(.bottom,40)
+
                 discoverButton
-                    .padding(.top, 20)
+                    .padding(.bottom, 50)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .padding(.horizontal, 20)
             .padding(.top, 18)
             .padding(.bottom, 40)
-            .ignoresSafeArea(.keyboard, edges: .all)
-            .onPreferenceChange(InputBottomKey.self) { inputBottomY = $0 }
 
             if let message = vm.toastMessage {
                 ToastView(message: message)
@@ -89,21 +60,11 @@ struct NFCToolsView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .keyboardLayoutLocked()
         .contentShape(Rectangle())
         .onTapGesture {
             dismissKeyboard()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillChangeFrameNotification)) { notification in
-            guard let frame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else { return }
-            let overlap = max(0, UIScreen.main.bounds.height - frame.origin.y)
-            withAnimation(.easeInOut(duration: 0.25)) {
-                keyboardHeight = overlap
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            withAnimation(.easeInOut(duration: 0.25)) {
-                keyboardHeight = 0
-            }
         }
         .sheet(item: $vm.selectedSheet) { icon in
             EditLinkSheet(
@@ -138,26 +99,28 @@ struct NFCToolsView: View {
     }
 
     private var header: some View {
-        ZStack {
-            Text("WELCOME")
-                .font(.custom(Constants.Fonts.interRegular, size: 12))
-                .kerning(1.2)
-                .foregroundStyle(.white)
 
             HStack {
                 Button(action: {
                     InteractionFeedback.tap()
                 }) {
                     Image(systemName: "gearshape.fill")
-                        .foregroundStyle(.white.opacity(0.8))
+                        .foregroundStyle(.white.opacity(0.4))
                         .frame(width: 44, height: 44)
-                        .background(Color.white.opacity(0.08))
-                        .clipShape(Circle())
+                       // .background(Color.white.opacity(0.08))
+                       // .clipShape(Circle())
                 }
 
                 Spacer()
               
-
+                Image("razn_logo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 50, height: 50)
+                   .frame(width: 44, height: 44)
+                
+                Spacer()
+                
                 Button(action: {
                     InteractionFeedback.tap()
                     vm.openInstagram()
@@ -166,26 +129,25 @@ struct NFCToolsView: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 18, height: 18)
+                        .opacity(0.4)
                        .frame(width: 44, height: 44)
-                        .background(Color.white.opacity(0.08))
-                       
-                        .clipShape(Circle())
+//                        .background(Color.white.opacity(0.08))
+//                        .clipShape(Circle())
                         
                 }
                 
             }
-        }
-        .padding(.horizontal, 24)
+
     }
 
     private var legacyHeroSection: some View {
-        Image("Razn_logo_home")
+        Image("razn_tag")
             .resizable()
-            .scaledToFit()
-            .frame(width: 130, height: 130)
+            .scaledToFill()
             .frame(maxWidth: .infinity)
-            .padding(.bottom, 20)
-            .padding(.top,40)
+            .frame(height: 240)
+            .clipped()
+            .opacity(0.7)
     }
 
     private var hintText: some View {
@@ -195,10 +157,11 @@ struct NFCToolsView: View {
     }
 
     private var iconGrid: some View {
-        LazyVGrid(columns: columns, spacing: 12) {
+        LazyVGrid(columns: columns, spacing: 16) {
             ForEach(vm.icons) { icon in
                 NFCIconButton(
                     icon: icon,
+                    size: iconSize,
                     hasLink: icon.hasLink,
                     isSelected: vm.selectedIconType == icon.type,
                     onTap: {
@@ -209,9 +172,10 @@ struct NFCToolsView: View {
                         vm.longPress(icon: icon)
                     }
                 )
-                .frame(width: iconSize)
+                .frame(maxWidth: .infinity)
             }
         }
+        .frame(maxWidth: .infinity)
     }
 
     private var inputSection: some View {

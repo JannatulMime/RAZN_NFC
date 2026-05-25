@@ -7,6 +7,7 @@ import SwiftUI
 
 struct NFCIconButton: View {
     let icon: NFCIcon
+    var size: CGFloat = 64
     /// Saved link exists — tap selects/fills and shows press scaling.
     var hasLink: Bool = true
     /// Input field currently shows this icon’s saved link (after tap).
@@ -18,8 +19,13 @@ struct NFCIconButton: View {
     /// After hold threshold when there is no link — long-press feedback only, not tap.
     @State private var isLongPressHeld: Bool = false
     @State private var didLongPress: Bool = false
-    private let cornerRadius: CGFloat = 22
     private static let longPressDuration: Double = 0.4
+    private static let referenceSize: CGFloat = 76
+
+    private var cornerRadius: CGFloat { size * (22 / Self.referenceSize) }
+    private var iconFontSize: CGFloat { size * (28 / Self.referenceSize) }
+    private var labelFontSize: CGFloat { size * (12 / Self.referenceSize) }
+    private var verticalPadding: CGFloat { size * (9 / Self.referenceSize) }
 
     private var accentColor: Color {
         isSelected ? Color.brandBlue : .black
@@ -38,21 +44,21 @@ struct NFCIconButton: View {
                         .stroke(Color.black.opacity(0.08), lineWidth: 1)
                 )
 
-            VStack(spacing: 4) {
+            VStack(spacing: size * (4 / Self.referenceSize)) {
                 Spacer(minLength: 0)
 
                 Image(systemName: icon.type.iconSymbolName)
-                    .font(.system(size: 28, weight: .regular))
+                    .font(.system(size: iconFontSize, weight: .regular))
                     .foregroundStyle(accentColor)
 
                 Text(icon.type.label)
-                    .font(.custom(Constants.Fonts.interRegular, size: 12))
+                    .font(.custom(Constants.Fonts.interRegular, size: labelFontSize))
                     .foregroundStyle(accentColor)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
             }
-            .padding(.vertical, 9)
-            .frame(width: 76, height: 76)
+            .padding(.vertical, verticalPadding)
+            .frame(width: size, height: size)
 
 //            if icon.hasLink {
 //                Circle()
@@ -62,7 +68,7 @@ struct NFCIconButton: View {
 //                    .padding(.bottom, 6)
 //            }
         }
-        .frame(width: 76, height: 76)
+        .frame(width: size, height: size)
         .contentShape(Rectangle())
         .scaleEffect(showPressEffect ? 0.88 : 1.0)
         .opacity(showPressEffect ? 0.75 : 1.0)
