@@ -68,6 +68,7 @@ struct NFCIconButton: View {
 //                    .padding(.bottom, 6)
 //            }
         }
+      
         .frame(width: size, height: size)
         .contentShape(Rectangle())
         .scaleEffect(showPressEffect ? 0.88 : 1.0)

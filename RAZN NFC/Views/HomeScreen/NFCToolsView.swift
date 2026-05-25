@@ -22,28 +22,29 @@ struct NFCToolsView: View {
 
     private let iconSize: CGFloat = 64
     private var columns: [GridItem] {
-        Array(repeating: GridItem(.flexible(), spacing: 10), count: 4)
+        Array(repeating: GridItem(.flexible()), count: 4)
     }
 
     var body: some View {
         ZStack(alignment: .bottom) {
-//            CustomBG()
             Color.black
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 header
-
-                legacyHeroSection
-                  
-
+                    .padding(.horizontal, 12)
+              legacyHeroSection
+                    .allowsHitTesting(false)
+            
                 Spacer(minLength: 0)
 
                 inputSection
+                    .padding(.horizontal, 12)
                    
                 writeButton
                     .padding(.top,18)
-                    .padding(.bottom, 60)
+                    .padding(.bottom, 45)
+                    .padding(.horizontal, 12)
 
                 iconGrid
                     .padding(.bottom, 30)
@@ -52,8 +53,9 @@ struct NFCToolsView: View {
                     .padding(.bottom, 20)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .padding(.horizontal, 20)
+            .padding(.horizontal, 8)
             .padding(.bottom, 40)
+           
 
             if let message = vm.toastMessage {
                 ToastView(message: message)
@@ -61,7 +63,7 @@ struct NFCToolsView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-       // .ignoresSafeArea(.keyboard, edges: .bottom)
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .keyboardLayoutLocked()
         .contentShape(Rectangle())
         .onTapGesture {
@@ -100,21 +102,26 @@ struct NFCToolsView: View {
     }
 
     private var header: some View {
-        HStack {
+        HStack(alignment: .center) {
             Button(action: {
                 InteractionFeedback.tap()
             }) {
                 Image(systemName: "gearshape.fill")
+                    .resizable()
+                  //  .opacity(0.4)
                     .foregroundStyle(.white.opacity(0.4))
-                    .frame(width: 44, height: 44)
-            }
+                    .frame(width: 20, height: 20)
+                    
+                    .scaledToFit()
+            }.buttonStyle(.plain)
 
             Spacer()
 
             Image("razn_logo")
                 .resizable()
                 .scaledToFit()
-                .frame(height: 70)
+                .frame(height: 80)
+                .opacity(0.7)
 
             Spacer()
 
@@ -125,10 +132,11 @@ struct NFCToolsView: View {
                 Image("instagram_icon_toolbar")
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 18, height: 18)
+                    .frame(width: 20, height: 20)
                     .opacity(0.4)
-                    .frame(width: 44, height: 44)
-            }
+                   // .foregroundStyle(.white.opacity(0.4))
+                   // .frame(width: 44, height: 44)
+            }.buttonStyle(.plain)
         }
         .frame(height: 70)
       
@@ -151,7 +159,7 @@ struct NFCToolsView: View {
     }
 
     private var iconGrid: some View {
-        LazyVGrid(columns: columns, spacing: 16) {
+        LazyVGrid(columns: columns, spacing: 30) {
             ForEach(vm.icons) { icon in
                 NFCIconButton(
                     icon: icon,
@@ -166,10 +174,10 @@ struct NFCToolsView: View {
                         vm.longPress(icon: icon)
                     }
                 )
-                .frame(maxWidth: .infinity)
+               // .frame(maxWidth: .infinity)
             }
         }
-        .frame(maxWidth: .infinity)
+      //  .frame(maxWidth: .infinity)
     }
 
     private var inputSection: some View {
