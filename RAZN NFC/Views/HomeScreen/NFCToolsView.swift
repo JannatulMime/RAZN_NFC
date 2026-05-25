@@ -31,27 +31,28 @@ struct NFCToolsView: View {
             Color.black
                 .ignoresSafeArea()
 
-            VStack(spacing: 18) {
+            VStack(spacing: 0) {
                 header
-                legacyHeroSection
 
-                Spacer()
+                legacyHeroSection
+                  
+
+                Spacer(minLength: 0)
+
                 inputSection
-                    .padding(.horizontal, 20)
+                   
                 writeButton
-                    .padding(.horizontal, 20)
-                    .padding(.bottom,40)
+                    .padding(.top,18)
+                    .padding(.bottom, 60)
 
                 iconGrid
-                    .padding(.horizontal, 20)
-                    .padding(.bottom,40)
+                    .padding(.bottom, 30)
 
                 discoverButton
-                    .padding(.bottom, 50)
+                    .padding(.bottom, 20)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .padding(.horizontal, 20)
-            .padding(.top, 18)
             .padding(.bottom, 40)
 
             if let message = vm.toastMessage {
@@ -60,7 +61,7 @@ struct NFCToolsView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .ignoresSafeArea(.keyboard, edges: .bottom)
+       // .ignoresSafeArea(.keyboard, edges: .bottom)
         .keyboardLayoutLocked()
         .contentShape(Rectangle())
         .onTapGesture {
@@ -99,45 +100,38 @@ struct NFCToolsView: View {
     }
 
     private var header: some View {
-
-            HStack {
-                Button(action: {
-                    InteractionFeedback.tap()
-                }) {
-                    Image(systemName: "gearshape.fill")
-                        .foregroundStyle(.white.opacity(0.4))
-                        .frame(width: 44, height: 44)
-                       // .background(Color.white.opacity(0.08))
-                       // .clipShape(Circle())
-                }
-
-                Spacer()
-              
-                Image("razn_logo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 50, height: 50)
-                   .frame(width: 44, height: 44)
-                
-                Spacer()
-                
-                Button(action: {
-                    InteractionFeedback.tap()
-                    vm.openInstagram()
-                }) {
-                    Image("instagram_icon_toolbar")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 18, height: 18)
-                        .opacity(0.4)
-                       .frame(width: 44, height: 44)
-//                        .background(Color.white.opacity(0.08))
-//                        .clipShape(Circle())
-                        
-                }
-                
+        HStack {
+            Button(action: {
+                InteractionFeedback.tap()
+            }) {
+                Image(systemName: "gearshape.fill")
+                    .foregroundStyle(.white.opacity(0.4))
+                    .frame(width: 44, height: 44)
             }
 
+            Spacer()
+
+            Image("razn_logo")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 70)
+
+            Spacer()
+
+            Button(action: {
+                InteractionFeedback.tap()
+                vm.openInstagram()
+            }) {
+                Image("instagram_icon_toolbar")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 18, height: 18)
+                    .opacity(0.4)
+                    .frame(width: 44, height: 44)
+            }
+        }
+        .frame(height: 70)
+      
     }
 
     private var legacyHeroSection: some View {

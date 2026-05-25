@@ -37,6 +37,7 @@ struct HomeScreenView: View {
 
     var body: some View {
         NFCToolsView(path: $path)
+            .toolbar(.hidden, for: .navigationBar)
     }
 }
 
