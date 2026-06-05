@@ -21,8 +21,9 @@ struct NFCToolsView: View {
     @State private var shareItems: ShareItems?
 
     private let iconSize: CGFloat = 64
-    private var columns: [GridItem] {
-        Array(repeating: GridItem(.flexible()), count: 4)
+    private let gridSpacing: CGFloat = 30
+    private var gridColumns: [GridItem] {
+        Array(repeating: GridItem(.fixed(iconSize), spacing: gridSpacing, alignment: .center), count: 4)
     }
 
     var body: some View {
@@ -32,29 +33,33 @@ struct NFCToolsView: View {
 
             VStack(spacing: 0) {
                 header
-                    .padding(.horizontal, 12)
+                   // .padding(.horizontal, 12)
+                Spacer()
               legacyHeroSection
                     .allowsHitTesting(false)
             
                 Spacer(minLength: 0)
 
                 inputSection
-                    .padding(.horizontal, 12)
+                    .padding(.horizontal, 5)
                    
                 writeButton
-                    .padding(.top,18)
-                    .padding(.bottom, 45)
-                    .padding(.horizontal, 12)
+                    .padding(.top,30)
+                    .padding(.bottom, 80)
+                    .padding(.horizontal, 5)
 
                 iconGrid
-                    .padding(.bottom, 30)
+                    .padding(.bottom, 70)
+                    .padding(.horizontal, 5)
+                
 
                 discoverButton
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 0)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .padding(.horizontal, 8)
-            .padding(.bottom, 40)
+            .padding(.horizontal, 20)
+            //.padding(.bottom, 40)
+          //  .background(Color.green)
            
 
             if let message = vm.toastMessage {
@@ -103,42 +108,42 @@ struct NFCToolsView: View {
 
     private var header: some View {
         HStack(alignment: .center) {
-            Button(action: {
-                InteractionFeedback.tap()
-            }) {
-                Image(systemName: "gearshape.fill")
-                    .resizable()
-                  //  .opacity(0.4)
-                    .foregroundStyle(.white.opacity(0.4))
-                    .frame(width: 20, height: 20)
-                    
-                    .scaledToFit()
-            }.buttonStyle(.plain)
+//            Button(action: {
+//                InteractionFeedback.tap()
+//            }) {
+//                Image(systemName: "gearshape.fill")
+//                    .resizable()
+//                  //  .opacity(0.4)
+//                    .foregroundStyle(.white.opacity(0.4))
+//                    .frame(width: 20, height: 20)
+//                    
+//                    .scaledToFit()
+//            }.buttonStyle(.plain)
 
             Spacer()
 
             Image("razn_logo")
                 .resizable()
                 .scaledToFit()
-                .frame(height: 80)
+                .frame(height: 20)
                 .opacity(0.7)
 
             Spacer()
 
-            Button(action: {
-                InteractionFeedback.tap()
-                vm.openInstagram()
-            }) {
-                Image("instagram_icon_toolbar")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 20, height: 20)
-                    .opacity(0.4)
-                   // .foregroundStyle(.white.opacity(0.4))
-                   // .frame(width: 44, height: 44)
-            }.buttonStyle(.plain)
+//            Button(action: {
+//                InteractionFeedback.tap()
+//                vm.openInstagram()
+//            }) {
+//                Image("instagram_icon_toolbar")
+//                    .resizable()
+//                    .scaledToFit()
+//                    .frame(width: 20, height: 20)
+//                    .opacity(0.4)
+//                   // .foregroundStyle(.white.opacity(0.4))
+//                   // .frame(width: 44, height: 44)
+//            }.buttonStyle(.plain)
         }
-        .frame(height: 70)
+        ///.frame(height: 70)
       
     }
 
@@ -146,10 +151,10 @@ struct NFCToolsView: View {
         Image("razn_tag")
             .resizable()
             .scaledToFill()
-            .frame(maxWidth: .infinity)
-            .frame(height: 240)
+            .frame(minWidth: 0, maxWidth: .infinity)
+            .frame(height: 250)
             .clipped()
-            .opacity(0.7)
+            .opacity(0.9)
     }
 
     private var hintText: some View {
@@ -159,25 +164,23 @@ struct NFCToolsView: View {
     }
 
     private var iconGrid: some View {
-        LazyVGrid(columns: columns, spacing: 30) {
+        LazyVGrid(columns: gridColumns, alignment: .center, spacing: gridSpacing) {
             ForEach(vm.icons) { icon in
                 NFCIconButton(
                     icon: icon,
                     size: iconSize,
                     hasLink: icon.hasLink,
                     isSelected: vm.selectedIconType == icon.type,
-                    onTap: {
-                        vm.tap(icon: icon)
-                    },
+                    onTap: { vm.tap(icon: icon) },
                     onLongPress: {
                         InteractionFeedback.longPress()
                         vm.longPress(icon: icon)
                     }
                 )
-               // .frame(maxWidth: .infinity)
             }
         }
-      //  .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity)
+       
     }
 
     private var inputSection: some View {
@@ -229,7 +232,7 @@ struct NFCToolsView: View {
             vm.openDiscover()
         }
         .font(.custom(Constants.Fonts.interRegular, size: 14))
-        .foregroundStyle(.white.opacity(0.7))
+        .foregroundStyle(.white.opacity(0.3))
     }
 }
 
