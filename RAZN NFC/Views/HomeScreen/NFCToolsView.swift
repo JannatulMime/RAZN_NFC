@@ -172,6 +172,7 @@ struct NFCToolsView: View {
                     hasLink: icon.hasLink,
                     isSelected: vm.selectedIconType == icon.type,
                     onTap: { vm.tap(icon: icon) },
+                    onDoubleTap: { vm.doubleTap(icon: icon) },
                     onLongPress: {
                         InteractionFeedback.longPress()
                         vm.longPress(icon: icon)

@@ -67,6 +67,22 @@ final class NFCViewModel: ObservableObject {
         }
     }
 
+    func doubleTap(icon: NFCIcon) {
+        let latestIcon = icons.first(where: { $0.id == icon.id })
+            ?? icons.first(where: { $0.type == icon.type })
+            ?? icon
+        guard latestIcon.hasLink else { return }
+
+        InteractionFeedback.tap()
+        let value = latestIcon.savedLink?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let normalized = normalizeURLInput(value)
+        guard !normalized.isEmpty, let url = URL(string: normalized) else {
+            showToast("Unable to open link")
+            return
+        }
+        UIApplication.shared.open(url)
+    }
+
     func longPress(icon: NFCIcon) {
         selectedSheet = icon
         sheetInputText = icon.savedLink ?? ""

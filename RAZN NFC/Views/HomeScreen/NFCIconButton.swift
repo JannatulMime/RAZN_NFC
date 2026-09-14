@@ -13,13 +13,16 @@ struct NFCIconButton: View {
     /// Input field currently shows this icon’s saved link (after tap).
     var isSelected: Bool = false
     let onTap: () -> Void
+    let onDoubleTap: () -> Void
     let onLongPress: () -> Void
     /// Immediate feedback only when a saved link exists (single tap / short touch).
     @State private var isTapPressed: Bool = false
     /// After hold threshold when there is no link — long-press feedback only, not tap.
     @State private var isLongPressHeld: Bool = false
     @State private var didLongPress: Bool = false
+    @State private var lastTapDate: Date?
     private static let longPressDuration: Double = 0.4
+    private static let doubleTapInterval: TimeInterval = 1.0
     private static let referenceSize: CGFloat = 76
 
     private var cornerRadius: CGFloat { size * (22 / Self.referenceSize) }
@@ -88,7 +91,7 @@ struct NFCIconButton: View {
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel(icon.type.label)
-        .accessibilityHint("Tap to autofill, press and hold to edit")
+        .accessibilityHint("Tap to autofill, double tap to open in browser, press and hold to edit")
     }
 
     private func beginPress() {
@@ -115,7 +118,14 @@ struct NFCIconButton: View {
 
     private func endPress() {
         if !didLongPress {
-            onTap()
+            let now = Date()
+            if let last = lastTapDate, now.timeIntervalSince(last) <= Self.doubleTapInterval {
+                lastTapDate = nil
+                onDoubleTap()
+            } else {
+                lastTapDate = now
+                onTap()
+            }
         }
 
         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
@@ -131,7 +141,7 @@ struct NFCIconButton_Previews: PreviewProvider {
     static var previews: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            NFCIconButton(icon: NFCIcon(type: .chat), onTap: {}, onLongPress: {})
+            NFCIconButton(icon: NFCIcon(type: .chat), onTap: {}, onDoubleTap: {}, onLongPress: {})
                 .padding()
         }
     }
