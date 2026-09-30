@@ -13,6 +13,7 @@ struct RAZN_NFCApp: App {
     init() {
         FirebaseApp.configure()
         print("Firebase App configured")
+        TesterModeManager.shared.restoreOnLaunch()
         FirebaseAnalyticsManager.shared.track(.appOpened)
 //        for family in UIFont.familyNames {
 //            print("Family: \(family)")

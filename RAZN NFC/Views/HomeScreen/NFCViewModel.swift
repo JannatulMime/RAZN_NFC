@@ -80,7 +80,13 @@ final class NFCViewModel: ObservableObject {
             showToast("Unable to open link")
             return
         }
-        UIApplication.shared.open(url)
+        let category = latestIcon.type.label
+        UIApplication.shared.open(url) { success in
+            guard success else { return }
+            FirebaseAnalyticsManager.shared.track(
+                .quickButtonOpenedInBrowser(category: category)
+            )
+        }
     }
 
     func longPress(icon: NFCIcon) {

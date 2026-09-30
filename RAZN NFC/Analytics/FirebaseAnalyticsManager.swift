@@ -11,19 +11,31 @@ import FirebaseAnalytics
 final class FirebaseAnalyticsManager {
 
     static let shared = FirebaseAnalyticsManager()
+    static let testerEventPrefix = "tester_"
 
-    private init() {}
+    private let testerMode: TesterModeManager
+
+    init(testerMode: TesterModeManager = .shared) {
+        self.testerMode = testerMode
+    }
 
     // MARK: - Public API
 
     func track(_ event: AnalyticsEvent) {
+        let resolvedName = resolvedEventName(for: event)
 
-        print("🔥 Analytics Tracked:", event.eventName)
+        print("🔥 Analytics Tracked:", resolvedName)
         print("🔥 Parameters:", event.parameters ?? [:])
         Analytics.logEvent(
-            event.eventName,
+            resolvedName,
             parameters: event.parameters
         )
+    }
+
+    func resolvedEventName(for event: AnalyticsEvent) -> String {
+        let baseName = event.eventName
+        guard testerMode.isEnabled else { return baseName }
+        return "\(Self.testerEventPrefix)\(baseName)"
     }
 }
 
@@ -37,6 +49,7 @@ extension FirebaseAnalyticsManager {
         case successfulNFCWrite
         case selectedQuickButtonCategory(category: String)
         case reviewPopupShown
+        case quickButtonOpenedInBrowser(category: String)
 
         // MARK: Event Name
 
@@ -55,6 +68,9 @@ extension FirebaseAnalyticsManager {
 
             case .reviewPopupShown:
                 return "review_popup_shown"
+
+            case .quickButtonOpenedInBrowser:
+                return "quick_button_opened_in_browser"
             }
         }
 
@@ -65,6 +81,11 @@ extension FirebaseAnalyticsManager {
             switch self {
 
             case .selectedQuickButtonCategory(let category):
+                return [
+                    "category": category
+                ]
+
+            case .quickButtonOpenedInBrowser(let category):
                 return [
                     "category": category
                 ]

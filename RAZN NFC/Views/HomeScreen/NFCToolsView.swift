@@ -19,7 +19,16 @@ struct NFCToolsView: View {
     @Binding var path: [Screens]
     @StateObject private var vm = NFCViewModel()
     @State private var shareItems: ShareItems?
+    @State private var logoTapCount = 0
+    @State private var lastLogoTapTime: Date?
+    @State private var testerBadgeTapCount = 0
+    @State private var lastTesterBadgeTapTime: Date?
+    @State private var testerToastMessage: String?
+    @State private var testerToastTask: Task<Void, Never>?
+    @State private var isTesterModeEnabled = TesterModeManager.shared.isEnabled
 
+    private let multiTapThreshold = 5
+    private let multiTapWindow: TimeInterval = 10.0
     private let iconSize: CGFloat = 64
     private let gridSpacing: CGFloat = 30
     private var gridColumns: [GridItem] {
@@ -62,7 +71,7 @@ struct NFCToolsView: View {
           //  .background(Color.green)
            
 
-            if let message = vm.toastMessage {
+            if let message = vm.toastMessage ?? testerToastMessage {
                 ToastView(message: message)
                     .padding(.bottom, 24)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -99,11 +108,72 @@ struct NFCToolsView: View {
         }
         .onAppear {
             AppStoreReviewManager.shared.recordAppLaunch()
+            isTesterModeEnabled = TesterModeManager.shared.isEnabled
         }
     }
 
     private func dismissKeyboard() {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    }
+
+    private func handleLogoTap() {
+        guard !isTesterModeEnabled else { return }
+        guard registerMultiTap(count: &logoTapCount, lastTapTime: &lastLogoTapTime) else { return }
+        setTesterModeEnabled(true)
+    }
+
+    private func handleTesterBadgeTap() {
+        guard isTesterModeEnabled else { return }
+        guard registerMultiTap(count: &testerBadgeTapCount, lastTapTime: &lastTesterBadgeTapTime) else { return }
+        setTesterModeEnabled(false)
+    }
+
+    private func registerMultiTap(count: inout Int, lastTapTime: inout Date?) -> Bool {
+        let now = Date()
+
+        if let lastTap = lastTapTime, now.timeIntervalSince(lastTap) > multiTapWindow {
+            count = 0
+        }
+
+        count += 1
+        lastTapTime = now
+
+        guard count >= multiTapThreshold else { return false }
+
+        count = 0
+        lastTapTime = nil
+        return true
+    }
+
+    private func setTesterModeEnabled(_ enabled: Bool) {
+        TesterModeManager.shared.setEnabled(enabled)
+        logoTapCount = 0
+        lastLogoTapTime = nil
+        testerBadgeTapCount = 0
+        lastTesterBadgeTapTime = nil
+
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
+            isTesterModeEnabled = enabled
+        }
+        showTesterToast(enabled ? "Tester Mode Enabled" : "Tester Mode Disabled")
+    }
+
+    private func showTesterToast(_ message: String) {
+        testerToastTask?.cancel()
+
+        withAnimation(.easeInOut(duration: 0.2)) {
+            testerToastMessage = message
+        }
+
+        testerToastTask = Task {
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    testerToastMessage = nil
+                }
+            }
+        }
     }
 
     private var header: some View {
@@ -122,11 +192,22 @@ struct NFCToolsView: View {
 
             Spacer()
 
-            Image("razn_logo")
-                .resizable()
-                .scaledToFit()
-                .frame(height: 20)
-                .opacity(0.7)
+            HStack(spacing: 8) {
+                Image("razn_logo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(height: 20)
+                    .opacity(0.7)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        handleLogoTap()
+                    }
+
+                if isTesterModeEnabled {
+                    TesterModeBadge(onTap: handleTesterBadgeTap)
+                        .transition(.scale(scale: 0.85).combined(with: .opacity))
+                }
+            }
 
             Spacer()
 
@@ -240,5 +321,71 @@ struct NFCToolsView: View {
 struct NFCToolsView_Previews: PreviewProvider {
     static var previews: some View {
         NFCToolsView(path: .constant([]))
+    }
+}
+
+// MARK: - Tester Mode Badge
+
+private struct TesterModeBadge: View {
+    let onTap: () -> Void
+    @State private var glow = false
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(Color.brandBlue)
+                .frame(width: 5, height: 5)
+                .shadow(color: Color.brandBlue.opacity(glow ? 0.9 : 0.35), radius: glow ? 5 : 2)
+
+            Text("TESTER")
+                .font(.custom(Constants.Fonts.interBold, size: 9))
+                .tracking(1.1)
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.white, Color.brandBlue.opacity(0.85)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 5)
+        .background {
+            Capsule(style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.brandBlue.opacity(0.22),
+                            Color.brandBlue.opacity(0.08)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay {
+                    Capsule(style: .continuous)
+                        .strokeBorder(
+                            LinearGradient(
+                                colors: [
+                                    Color.brandBlue.opacity(0.75),
+                                    Color.brandBlue.opacity(0.25)
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                }
+                .shadow(color: Color.brandBlue.opacity(0.25), radius: 8, y: 2)
+        }
+        .contentShape(Capsule(style: .continuous))
+        .onTapGesture {
+            onTap()
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true)) {
+                glow = true
+            }
+        }
     }
 }
