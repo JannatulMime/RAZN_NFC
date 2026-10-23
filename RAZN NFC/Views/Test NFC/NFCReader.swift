@@ -1,22 +1,33 @@
-
 import CoreNFC
 
-class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate {
+class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate, NFCTagReaderSessionDelegate {
 
     @Published var message = "Waiting for NFC tag..."
-    var session: NFCNDEFReaderSession?
+    /// NDEF session used for production reads (never requires a password).
+    private var ndefSession: NFCNDEFReaderSession?
+    /// Tag session used for production writes (may PWD_AUTH before writeNDEF).
+    private var tagSession: NFCTagReaderSession?
     var onScanComplete: ((String) -> Void)?
     var onWriteComplete: ((Bool) -> Void)?
+    /// Optional user-facing failure detail (never includes the password).
+    var onWriteFailureMessage: ((String) -> Void)?
     var isWriting = false
     var textToWrite: String?
 
     @Published var alertMessage: String = ""
     @Published var showAlert: Bool = false
 
+    private let passwordStore: AuthNFCPasswordStore
+
+    init(passwordStore: AuthNFCPasswordStore = AuthNFCPasswordStore()) {
+        self.passwordStore = passwordStore
+        super.init()
+    }
+
     func scan(completion: @escaping (String) -> Void) {
         onScanComplete = completion
         isWriting = false
-        startSession()
+        startNDEFSession()
     }
 
     /// If `text` looks like a URL, we’ll write a URL record. Otherwise we write a Text record.
@@ -24,7 +35,7 @@ class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate {
         onWriteComplete = completion
         textToWrite = text
         isWriting = true
-        startSession()
+        startTagWriteSession()
     }
 
     /// Convenience: explicitly write a URL (recommended for your use case)
@@ -32,10 +43,12 @@ class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate {
         onWriteComplete = completion
         textToWrite = urlString
         isWriting = true
-        startSession()
+        startTagWriteSession()
     }
 
-    private func startSession() {
+    // MARK: - Session start
+
+    private func startNDEFSession() {
         guard NFCNDEFReaderSession.readingAvailable else {
             NSLog("NFC is not available on this device")
             alertMessage = "NFC is not available on this device"
@@ -43,12 +56,35 @@ class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate {
             return
         }
 
-        session = NFCNDEFReaderSession(delegate: self, queue: nil, invalidateAfterFirstRead: true)
-        session?.alertMessage = isWriting ? "Hold your iPhone near an NFC tag to write." : "Hold your iPhone near an NFC tag to read."
-        session?.begin()
+        ndefSession = NFCNDEFReaderSession(delegate: self, queue: nil, invalidateAfterFirstRead: true)
+        ndefSession?.alertMessage = "Hold your iPhone near an NFC tag to read."
+        ndefSession?.begin()
     }
 
-    // MARK: - Reading
+    private func startTagWriteSession() {
+        guard NFCTagReaderSession.readingAvailable else {
+            NSLog("NFC is not available on this device")
+            alertMessage = "NFC is not available on this device"
+            showAlert = true
+            reportWriteFailure("NFC is not available on this device.")
+            return
+        }
+
+        guard tagSession == nil else {
+            reportWriteFailure("Another NFC session is already active. Wait for it to finish.")
+            return
+        }
+
+        guard let session = NFCTagReaderSession(pollingOption: .iso14443, delegate: self, queue: nil) else {
+            reportWriteFailure("NFC is not available on this device.")
+            return
+        }
+        session.alertMessage = "Hold your iPhone near an NFC tag to write."
+        tagSession = session
+        session.begin()
+    }
+
+    // MARK: - Reading (NDEF session — no password)
 
     func readerSession(_ session: NFCNDEFReaderSession, didDetectNDEFs messages: [NFCNDEFMessage]) {
         guard !isWriting else { return }
@@ -56,11 +92,8 @@ class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate {
     }
 
     func readerSession(_ session: NFCNDEFReaderSession, didDetect tags: [NFCNDEFTag]) {
-        if isWriting {
-            handleWriting(session: session, tags: tags)
-        } else {
-            handleReading(session: session, tags: tags)
-        }
+        // Production read path only. Writes use NFCTagReaderSession.
+        handleReading(session: session, tags: tags)
     }
 
     private func handleReading(session: NFCNDEFReaderSession, tags: [NFCNDEFTag]) {
@@ -136,62 +169,157 @@ class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate {
         }
     }
 
-    // MARK: - Writing
+    // MARK: - Writing (TagReader session — auth gate then existing NDEF write)
 
-    private func handleWriting(session: NFCNDEFReaderSession, tags: [NFCNDEFTag]) {
-        guard let tag = tags.first else {
-            session.invalidate(errorMessage: "No tag detected")
+    func tagReaderSessionDidBecomeActive(_ session: NFCTagReaderSession) {}
+
+    func tagReaderSession(_ session: NFCTagReaderSession, didInvalidateWithError error: Error) {
+        if let readerError = error as? NFCReaderError {
+            if readerError.code != .readerSessionInvalidationErrorUserCanceled {
+                // Avoid noisy logs for cancel; other codes may still be useful for debug without secrets.
+                if readerError.code != .readerSessionInvalidationErrorFirstNDEFTagRead {
+                    NSLog("Tag write session invalidated: \(readerError.code.rawValue)")
+                }
+            }
+        }
+        tagSession = nil
+    }
+
+    func tagReaderSession(_ session: NFCTagReaderSession, didDetect tags: [NFCTag]) {
+        guard isWriting else {
+            session.invalidate(errorMessage: "Unexpected tag detection during write.")
             return
         }
 
-        session.connect(to: tag) { error in
-            if let error = error {
-                session.invalidate(errorMessage: "Connection error: \(error.localizedDescription)")
-                return
-            }
+        if tags.count > 1 {
+            session.invalidate(errorMessage: "More than 1 tag detected. Please try again with only one tag.")
+            reportWriteFailure("More than one tag was present. Use a single tag.")
+            return
+        }
 
-            tag.queryNDEFStatus { status, _, error in
-                guard error == nil else {
-                    session.invalidate(errorMessage: "Failed to query tag")
-                    return
-                }
+        guard let first = tags.first else {
+            session.invalidate(errorMessage: "No tag detected")
+            reportWriteFailure("No NFC tag was detected during the session.")
+            return
+        }
 
-                switch status {
-                case .notSupported:
-                    session.invalidate(errorMessage: "Tag is not NDEF compliant")
-                case .readOnly:
-                    session.invalidate(errorMessage: "Tag is read-only")
-                case .readWrite:
-                    guard let textToWrite = self.textToWrite else {
-                        session.invalidate(errorMessage: "No text to write")
-                        return
-                    }
+        guard case .miFare(let miFareTag) = first else {
+            session.invalidate(errorMessage: "Unsupported tag type for writing.")
+            reportWriteFailure("Unsupported or unidentified tag. Use an NTAG213, NTAG215, or NTAG216.")
+            return
+        }
 
-                    // Decide payload: URL vs Text
-                    let message: NFCNDEFMessage
-                    if let urlPayload = self.makeURIPayload(from: textToWrite) {
-                        message = NFCNDEFMessage(records: [urlPayload])
+        Task {
+            await self.performProductionWrite(session: session, tag: miFareTag)
+        }
+    }
+
+    private func performProductionWrite(session: NFCTagReaderSession, tag: NFCMiFareTag) async {
+        do {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                session.connect(to: .miFare(tag)) { error in
+                    if let error {
+                        continuation.resume(throwing: error)
                     } else {
-                        let textPayload = NFCNDEFPayload.wellKnownTypeTextPayload(string: textToWrite, locale: Locale(identifier: "en"))!
-                        message = NFCNDEFMessage(records: [textPayload])
+                        continuation.resume()
                     }
-
-                    tag.writeNDEF(message) { error in
-                        if let error = error {
-                            session.invalidate(errorMessage: "Write failed: \(error.localizedDescription)")
-                        } else {
-                            session.alertMessage = "Write successful!"
-                            session.invalidate()
-                        }
-
-                        DispatchQueue.main.async {
-                            self.onWriteComplete?(error == nil)
-                        }
-                    }
-                @unknown default:
-                    session.invalidate(errorMessage: "Unknown tag status")
                 }
             }
+        } catch {
+            session.invalidate(errorMessage: "Connection error")
+            reportWriteFailure("Could not connect to the tag. Keep the tag near the iPhone and try again.")
+            return
+        }
+
+        guard let textToWrite else {
+            session.invalidate(errorMessage: "No text to write")
+            reportWriteFailure("No text to write.")
+            return
+        }
+
+        // Preserve existing payload encoding: URL vs Text NDEF records.
+        let message: NFCNDEFMessage
+        if let urlPayload = makeURIPayload(from: textToWrite) {
+            message = NFCNDEFMessage(records: [urlPayload])
+        } else {
+            let textPayload = NFCNDEFPayload.wellKnownTypeTextPayload(string: textToWrite, locale: Locale(identifier: "en"))!
+            message = NFCNDEFMessage(records: [textPayload])
+        }
+
+        // Auth gate: PWD_AUTH only when protected destination pages require it.
+        // Never writes payload before this returns successfully when auth is required.
+        //
+        // After MiFare commands, Core NFC queryNDEFStatus/writeNDEF often fail with
+        // NFCError 104 ("Stack Error"). Write the same NDEF URI/Text payload via
+        // Type 2 page WRITE in this session instead.
+        let prep: AuthNFCProductionWritePrep
+        do {
+            prep = try await AuthNFCProductionWriteGate.prepareAuthenticatedWrite(
+                tag: tag,
+                ndefMessage: message,
+                passwordStore: passwordStore
+            )
+        } catch let error as AuthNFCError {
+            let userMessage = productionWriteErrorMessage(for: error)
+            session.invalidate(errorMessage: error.title)
+            reportWriteFailure(userMessage)
+            return
+        } catch {
+            session.invalidate(errorMessage: "Authentication failed")
+            reportWriteFailure(
+                "Authentication failed. Check the stored password and try again. No new payload was written by this operation."
+            )
+            return
+        }
+
+        do {
+            try await AuthNFCProductionWriteGate.writeNDEFViaPages(
+                tag: tag,
+                message: message,
+                profile: prep.profile,
+                authenticated: prep.authenticated
+            )
+            session.alertMessage = "Write successful!"
+            session.invalidate()
+            DispatchQueue.main.async {
+                self.onWriteComplete?(true)
+            }
+        } catch let error as AuthNFCError {
+            session.invalidate(errorMessage: error.title)
+            reportWriteFailure(productionWriteErrorMessage(for: error))
+        } catch {
+            session.invalidate(errorMessage: "Write failed")
+            reportWriteFailure(
+                "The tag could not be written. Keep the tag near the iPhone and try again. If the problem continues, check the tag's protection settings."
+            )
+        }
+    }
+
+    private func productionWriteErrorMessage(for error: AuthNFCError) -> String {
+        switch error {
+        case .noStoredPassword:
+            return error.explanation
+        case .authenticationRejected, .packMismatch:
+            return "Authentication failed. Check the stored password and try again. No new payload was written by this operation."
+        case .invalidPasswordFormat:
+            return error.explanation
+        case .unsupportedTagType, .versionIdentificationFailed:
+            return "Unsupported or unidentified tag. Use an NTAG213, NTAG215, or NTAG216."
+        case .userCancelled:
+            return "NFC session cancelled."
+        case .tagRemoved, .sessionTimeoutOrInvalidation:
+            return "The tag was removed or the NFC session timed out. Keep the tag near the iPhone and try again."
+        case .writeProtectionOrLock:
+            return "The tag could not be written. Keep the tag near the iPhone and try again. If the problem continues, check the tag's protection settings."
+        default:
+            return error.explanation
+        }
+    }
+
+    private func reportWriteFailure(_ message: String) {
+        DispatchQueue.main.async {
+            self.onWriteFailureMessage?(message)
+            self.onWriteComplete?(false)
         }
     }
 
@@ -221,7 +349,7 @@ class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate {
         return NFCNDEFPayload.wellKnownTypeURIPayload(url: url)
     }
 
-    // MARK: - Session end
+    // MARK: - NDEF session end
 
     func readerSession(_ session: NFCNDEFReaderSession, didInvalidateWithError error: Error) {
         if let readerError = error as? NFCReaderError {
@@ -230,7 +358,6 @@ class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate {
                 NSLog("Session invalidated with error: \(error.localizedDescription)")
             }
         }
-        self.session = nil
+        ndefSession = nil
     }
 }
-

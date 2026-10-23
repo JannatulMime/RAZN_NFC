@@ -142,16 +142,21 @@ final class NFCViewModel: ObservableObject {
             return
         }
 
+        nfcReader.onWriteFailureMessage = { [weak self] message in
+            Task { @MainActor in
+                self?.showToast(message)
+            }
+        }
+
         nfcReader.write(payload) { [weak self] isSuccess in
             Task { @MainActor in
                 guard let self else { return }
                 if isSuccess {
                     FirebaseAnalyticsManager.shared.track(.successfulNFCWrite)
-                    self.showToast("NFC write complete (\(payload.utf8.count) bytes)")
+                    self.showToast("Tag written successfully.")
                     AppStoreReviewManager.shared.recordNFCWrite()
-                } else {
-                    self.showToast("NFC write failed")
                 }
+                // Failures are surfaced via onWriteFailureMessage with actionable text.
             }
         }
     }

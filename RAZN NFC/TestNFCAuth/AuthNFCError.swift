@@ -18,6 +18,7 @@ enum AuthNFCError: Error, Equatable {
     case nfcUnavailable
     case authenticationRejected
     case authenticationRequired
+    case noStoredPassword
     case packMismatch
     case tagNotConfiguredForProtection
     case writeProtectionOrLock
@@ -61,6 +62,8 @@ enum AuthNFCError: Error, Equatable {
             return "Authentication Failed"
         case .authenticationRequired:
             return "Authentication Required"
+        case .noStoredPassword:
+            return "No NFC Password Stored"
         case .packMismatch:
             return "PACK Mismatch"
         case .tagNotConfiguredForProtection:
@@ -121,9 +124,11 @@ enum AuthNFCError: Error, Equatable {
         case .nfcUnavailable:
             return "NFC is not available or not allowed on this device."
         case .authenticationRejected:
-            return "The tag rejected the password. Wrong password, or the tag is not configured as expected."
+            return "Authentication failed. Check the stored password and try again. No new payload was written by this operation."
         case .authenticationRequired:
             return "The relevant memory is password-protected. This operation cannot continue without a successful PWD_AUTH, and it will not bypass tag protection."
+        case .noStoredPassword:
+            return "No NFC password is stored. Tap \"Store NFC Password\" before writing to a password-protected tag."
         case .packMismatch:
             return "Authentication returned a PACK that does not match the expected acknowledgement for this password."
         case .tagNotConfiguredForProtection:
@@ -187,6 +192,8 @@ enum AuthNFCError: Error, Equatable {
             return "Confirm the password matches registration, then hold the tag steady and retry."
         case .authenticationRequired:
             return "Use Authenticate & Write with the correct password for protected writes, or Read Content with a password if the tag uses read protection."
+        case .noStoredPassword:
+            return "Open Store NFC Password, enter the same 8-character hex password configured on the tag, then retry Write."
         case .packMismatch:
             return "Use the same password encoding as registration. If the tag was configured elsewhere, use a fresh test tag."
         case .tagNotConfiguredForProtection:

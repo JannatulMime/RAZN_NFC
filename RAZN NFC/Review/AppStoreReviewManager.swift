@@ -36,16 +36,11 @@ final class AppStoreReviewManager {
         evaluateAfterAppLaunch()
     }
 
-//    #if DEBUG
-//    func resetForTesting() {
-//        ReviewDefaultsKey.allCases.forEach { removeValue(for: $0) }
-//    }
-//
-//    /// Presents StoreKit’s in-app review UI immediately (for design/debug on device/simulator).
-//    func requestStoreKitReviewForDebug() {
-//        requestStoreReview()
-//    }
-//    #endif
+    #if DEBUG
+    func resetForTesting() {
+        ReviewDefaultsKey.allCases.forEach { removeValue(for: $0) }
+    }
+    #endif
 
     // MARK: - Private
 
