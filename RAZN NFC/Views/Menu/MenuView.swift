@@ -33,6 +33,7 @@ struct MenuView: View {
         } message: {
             Text("You need to insert a valid link.")
         }
+        .authNFCProductionWriteAlert($nfcReader.writeAlert)
         .navigationBarBackButtonHidden(true)
     }
 
@@ -43,24 +44,14 @@ struct MenuView: View {
     }
 
     private func writeTag(text: String) {
-        nfcReader.write(text, completion: { isSuccess in
-            print("U>> write isSuccess \(isSuccess)")
-
+        nfcReader.write(text) { isSuccess in
             Task { @MainActor in
                 if isSuccess {
                     FirebaseAnalyticsManager.shared.track(.successfulNFCWrite)
                     AppStoreReviewManager.shared.recordNFCWrite()
                 }
             }
-
-            if text.isValidURLString() {
-                print("Valid Url")
-                writeTag(text: nfcWriteInfoVM.getfullURL())
-            } else {
-                print("inValid Url")
-            }
-
-        })
+        }
     }
 
     func getWriteBytesText() -> String {

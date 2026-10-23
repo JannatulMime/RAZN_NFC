@@ -20,6 +20,8 @@ enum AuthNFCError: Error, Equatable {
     case authenticationRequired
     case noStoredPassword
     case packMismatch
+    case unprotectedTag
+    case configurationUnreadable
     case tagNotConfiguredForProtection
     case writeProtectionOrLock
     case configurationPermanentlyLocked
@@ -67,6 +69,10 @@ enum AuthNFCError: Error, Equatable {
             return "No NFC Password Stored"
         case .packMismatch:
             return "PACK Mismatch"
+        case .unprotectedTag:
+            return "Unprotected Tag"
+        case .configurationUnreadable:
+            return "Configuration Unreadable"
         case .tagNotConfiguredForProtection:
             return "Tag Not Password-Protected"
         case .writeProtectionOrLock:
@@ -134,6 +140,10 @@ enum AuthNFCError: Error, Equatable {
             return "No NFC password is stored. Tap \"Store NFC Password\" and enter a valid 8-character hex password before writing to a protected tag or unregistering."
         case .packMismatch:
             return "Authentication returned a PACK that does not match the expected acknowledgement for this password."
+        case .unprotectedTag:
+            return "This tag does not have password protection enabled. Writing is not allowed."
+        case .configurationUnreadable:
+            return "The tag password-protection settings could not be read reliably. Writing is not allowed."
         case .tagNotConfiguredForProtection:
             return "The tag’s AUTH0 setting does not indicate the protection mode this demo expects."
         case .writeProtectionOrLock:
@@ -201,6 +211,10 @@ enum AuthNFCError: Error, Equatable {
             return "Open Store NFC Password, enter the same 8-character hex password configured on the tag, then retry Write or Unregister."
         case .packMismatch:
             return "Use the same password encoding as registration. If the tag was configured elsewhere, use a fresh test tag."
+        case .unprotectedTag:
+            return "Use an NTAG213 or NTAG215 whose user memory is password-protected, then try the write again."
+        case .configurationUnreadable:
+            return "Hold the tag steady and try again. The write stays cancelled until protection settings can be read."
         case .tagNotConfiguredForProtection:
             return "Register the tag password in this demo first, or use a tag configured the same way."
         case .writeProtectionOrLock:
@@ -253,6 +267,10 @@ enum AuthNFCError: Error, Equatable {
             return "Expected \(AuthNFCConstants.passwordHexLength) hex characters → 4 bytes for PWD_AUTH (0x1B)."
         case .packMismatch:
             return "PWD_AUTH must return the 2-byte PACK written at the variant’s PACK page. This demo derives PACK as SHA256(pwd)[0..<2]."
+        case .unprotectedTag:
+            return "AUTH0 must cover every user-memory page this write will modify. AUTH0 0xFF disables protection. ACCESS.PROT does not enable protection by itself."
+        case .configurationUnreadable:
+            return "CFG0/CFG1 were not read. The tag was not treated as unprotected, and no write was sent."
         case .configurationPermanentlyLocked:
             return "ACCESS.CFGLCK (CFG1 bit 6) permanently locks CFG0/CFG1 after power cycle."
         case .tagNotConfiguredForProtection:

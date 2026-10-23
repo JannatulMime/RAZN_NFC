@@ -62,6 +62,17 @@ final class AuthNFCPasswordStoreTests: XCTestCase {
         defaults.set("not-hex!!", forKey: AuthNFCPasswordStore.defaultsKey)
         XCTAssertNil(store.retrieve())
         XCTAssertFalse(store.hasPassword)
+        XCTAssertEqual(store.lookup(), .invalid)
+    }
+
+    func testLookupDistinguishesMissingInvalidAndValid() throws {
+        XCTAssertEqual(store.lookup(), .missing)
+        defaults.set("   ", forKey: AuthNFCPasswordStore.defaultsKey)
+        XCTAssertEqual(store.lookup(), .missing)
+        defaults.set("abcd", forKey: AuthNFCPasswordStore.defaultsKey)
+        XCTAssertEqual(store.lookup(), .invalid)
+        try store.save(hexPassword: "a1b2c3d4")
+        XCTAssertEqual(store.lookup(), .valid(hex: "A1B2C3D4"))
     }
 
     func testNoPasswordStoredErrorMessageIsActionable() {

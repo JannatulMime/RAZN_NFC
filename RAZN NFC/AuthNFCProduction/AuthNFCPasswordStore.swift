@@ -8,6 +8,13 @@
 
 import Foundation
 
+enum AuthNFCStoredPasswordLookup: Equatable {
+    case missing
+    case invalid
+    /// Uppercase 8-character hex. Never log this value.
+    case valid(hex: String)
+}
+
 /// Persists a validated 8-hex-character NTAG21x password for production write authentication.
 struct AuthNFCPasswordStore {
     static let defaultsKey = "authNFCStoredPassword"
@@ -23,14 +30,21 @@ struct AuthNFCPasswordStore {
         retrieve() != nil
     }
 
+    /// Distinguishes a missing key from a stored value that is not 8 hex characters.
+    func lookup() -> AuthNFCStoredPasswordLookup {
+        guard let value = defaults.string(forKey: Self.defaultsKey) else { return .missing }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return .missing }
+        guard (try? AuthNFCPasswordService.passwordBytes(fromHex: trimmed)) != nil else {
+            return .invalid
+        }
+        return .valid(hex: trimmed.uppercased())
+    }
+
     /// Returns the stored uppercase hex password, or `nil` if none / malformed.
     func retrieve() -> String? {
-        guard let value = defaults.string(forKey: Self.defaultsKey) else { return nil }
-        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard (try? AuthNFCPasswordService.passwordBytes(fromHex: trimmed)) != nil else {
-            return nil
-        }
-        return trimmed.uppercased()
+        guard case .valid(let hex) = lookup() else { return nil }
+        return hex
     }
 
     /// Validates and stores the password as uppercase hex. Rejects malformed input.

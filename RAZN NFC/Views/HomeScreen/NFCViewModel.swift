@@ -17,6 +17,7 @@ final class NFCViewModel: ObservableObject {
     @Published var toastMessage: String?
     @Published var nfcAlertMessage: String = ""
     @Published var showNFCAlert: Bool = false
+    @Published var writeAlert: AuthNFCProductionWriteAlert?
 
     private var toastTask: Task<Void, Never>?
     private let nfcReader = NFCReader()
@@ -29,6 +30,7 @@ final class NFCViewModel: ObservableObject {
             return NFCIcon(type: type, savedLink: saved)
         }
         bindNFCAlerts()
+        bindWriteAlerts()
         bindSelectionToInput()
     }
 
@@ -142,12 +144,6 @@ final class NFCViewModel: ObservableObject {
             return
         }
 
-        nfcReader.onWriteFailureMessage = { [weak self] message in
-            Task { @MainActor in
-                self?.showToast(message)
-            }
-        }
-
         nfcReader.write(payload) { [weak self] isSuccess in
             Task { @MainActor in
                 guard let self else { return }
@@ -156,7 +152,7 @@ final class NFCViewModel: ObservableObject {
                     self.showToast("Tag written successfully.")
                     AppStoreReviewManager.shared.recordNFCWrite()
                 }
-                // Failures are surfaced via onWriteFailureMessage with actionable text.
+                // Failures are surfaced as a titled write alert. Reading does not use that alert.
             }
         }
     }
@@ -175,6 +171,11 @@ final class NFCViewModel: ObservableObject {
             return
         }
         UIApplication.shared.open(url)
+    }
+
+    func dismissWriteAlert() {
+        nfcReader.writeAlert = nil
+        writeAlert = nil
     }
 
     func dismissToast() {
@@ -231,6 +232,15 @@ final class NFCViewModel: ObservableObject {
             .receive(on: RunLoop.main)
             .sink { [weak self] shouldShow in
                 self?.showNFCAlert = shouldShow
+            }
+            .store(in: &cancellables)
+    }
+
+    private func bindWriteAlerts() {
+        nfcReader.$writeAlert
+            .receive(on: RunLoop.main)
+            .sink { [weak self] alert in
+                self?.writeAlert = alert
             }
             .store(in: &cancellables)
     }

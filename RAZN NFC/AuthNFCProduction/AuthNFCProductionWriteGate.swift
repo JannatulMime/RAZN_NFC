@@ -3,6 +3,10 @@
 //  RAZN NFC
 //
 //  Authentication gate + Type 2 NDEF page writer for the production write path.
+//  A production write is sent only after the tag is confirmed to be an NTAG213 or
+//  NTAG215 whose destination pages are password-protected, and PWD_AUTH with the
+//  stored password succeeds. Unprotected tags and failed authentication do not write.
+//
 //  After MiFare commands (GET_VERSION / PWD_AUTH), Core NFC's queryNDEFStatus/writeNDEF
 //  often fails with NFCError 104 ("Stack Error"). Writing the same NDEF payload via
 //  page WRITE avoids that conflict while preserving URI/Text record encoding.
@@ -18,62 +22,86 @@ struct AuthNFCProductionWritePrep: Equatable {
 
 enum AuthNFCProductionWriteGate {
 
-    /// Identifies the tag, authenticates when protected pages require it, and returns the profile.
-    /// Does not write payload pages.
+    /// Identifies the tag, requires password protection on the destination pages, then authenticates.
+    /// Does not write payload or configuration pages.
     static func prepareAuthenticatedWrite(
-        tag: NFCMiFareTag,
+        tag: any AuthNFCTagCommanding,
         ndefMessage: NFCNDEFMessage,
         passwordStore: AuthNFCPasswordStore
     ) async throws -> AuthNFCProductionWritePrep {
         let (_, profile) = try await AuthNFCTagService.identifySupportedTag(tag)
+        guard profile.variant == .ntag213 || profile.variant == .ntag215 else {
+            throw AuthNFCError.unsupportedTagType(
+                details: "Production writes accept NTAG213 and NTAG215 only."
+            )
+        }
+
         let tlv = try type2UserMemory(for: ndefMessage, profile: profile)
         let pageCount = max(1, (tlv.count + 3) / 4)
-        var didAuth = false
+        let snapshot = try await readProductionConfig(tag, profile: profile)
 
-        let snapshot: AuthNFCConfigSnapshot
-        do {
-            snapshot = try await AuthNFCTagService.readConfigSnapshot(tag, profile: profile)
-        } catch {
-            try await authenticateWithStoredPassword(
-                tag: tag,
-                passwordStore: passwordStore,
-                treatingMissingPasswordAs: .noStoredPassword
-            )
-            didAuth = true
-            snapshot = try await AuthNFCTagService.readConfigSnapshot(tag, profile: profile)
-        }
-
-        let writeNeedsAuth = snapshot.writeRangeRequiresAuthentication(
+        // CFG0 AUTH0 and CFG1 ACCESS come from the variant's own pages.
+        // Protection has to cover the whole user-memory span that will be written.
+        guard AuthNFCProtection.productionDestinationIsFullyProtected(
             startPage: profile.userMemoryStartPage,
             pageCount: pageCount,
+            auth0: snapshot.auth0,
+            access: snapshot.access,
             profile: profile
-        )
-
-        if writeNeedsAuth {
-            if !didAuth {
-                try await authenticateWithStoredPassword(
-                    tag: tag,
-                    passwordStore: passwordStore,
-                    treatingMissingPasswordAs: .noStoredPassword
-                )
-                didAuth = true
-            }
+        ) else {
+            throw AuthNFCError.unprotectedTag
         }
 
-        if writeNeedsAuth && !didAuth {
-            throw AuthNFCError.authenticationRequired
-        }
-
-        return AuthNFCProductionWritePrep(authenticated: didAuth, profile: profile)
+        try await authenticateWithStoredPassword(tag: tag, passwordStore: passwordStore)
+        return AuthNFCProductionWritePrep(authenticated: true, profile: profile)
     }
 
-    /// Writes the production NDEF message into Type 2 user memory (page 4+), after optional auth.
-    static func writeNDEFViaPages(
+    /// Production entry point for a live Core NFC tag.
+    static func writeProtectedNDEF(
         tag: NFCMiFareTag,
+        message: NFCNDEFMessage,
+        passwordStore: AuthNFCPasswordStore
+    ) async throws {
+        try await writeProtectedNDEF(
+            tag: AuthNFCMiFareCommandBox(tag: tag),
+            message: message,
+            passwordStore: passwordStore
+        )
+    }
+
+    /// Production entry point. Writes only after `prepareAuthenticatedWrite` succeeds.
+    static func writeProtectedNDEF(
+        tag: any AuthNFCTagCommanding,
+        message: NFCNDEFMessage,
+        passwordStore: AuthNFCPasswordStore
+    ) async throws {
+        let prep = try await prepareAuthenticatedWrite(
+            tag: tag,
+            ndefMessage: message,
+            passwordStore: passwordStore
+        )
+        guard prep.authenticated else {
+            throw AuthNFCError.authenticationRequired
+        }
+        try await writeNDEFViaPages(
+            tag: tag,
+            message: message,
+            profile: prep.profile,
+            authenticated: true
+        )
+    }
+
+    /// Writes the production NDEF message into Type 2 user memory (page 4+).
+    /// Refuses to send WRITE unless authentication has already succeeded.
+    static func writeNDEFViaPages(
+        tag: any AuthNFCTagCommanding,
         message: NFCNDEFMessage,
         profile: AuthNFCTagProfile,
         authenticated: Bool
     ) async throws {
+        guard authenticated else {
+            throw AuthNFCError.authenticationRequired
+        }
         let tlv = try type2UserMemory(for: message, profile: profile)
         try await ensureCapabilityContainer(tag, profile: profile)
         try await AuthNFCTagService.writePages(
@@ -162,8 +190,27 @@ enum AuthNFCProductionWriteGate {
 
     // MARK: - Private
 
+    private static func readProductionConfig(
+        _ tag: any AuthNFCTagCommanding,
+        profile: AuthNFCTagProfile
+    ) async throws -> AuthNFCConfigSnapshot {
+        do {
+            return try await AuthNFCTagService.readConfigSnapshot(tag, profile: profile)
+        } catch let error as AuthNFCError {
+            switch error {
+            case .tagRemoved, .connectionFailed, .sessionTimeoutOrInvalidation, .userCancelled, .nfcUnavailable:
+                throw error
+            default:
+                // A failed CFG read is not AUTH0=0xFF and must not fall through to a write.
+                throw AuthNFCError.configurationUnreadable
+            }
+        } catch {
+            throw AuthNFCError.configurationUnreadable
+        }
+    }
+
     private static func ensureCapabilityContainer(
-        _ tag: NFCMiFareTag,
+        _ tag: any AuthNFCTagCommanding,
         profile: AuthNFCTagProfile
     ) async throws {
         // Page 3 holds the Capability Container. Leave a valid CC untouched.
@@ -187,19 +234,19 @@ enum AuthNFCProductionWriteGate {
     }
 
     private static func authenticateWithStoredPassword(
-        tag: NFCMiFareTag,
-        passwordStore: AuthNFCPasswordStore,
-        treatingMissingPasswordAs missing: AuthNFCError
+        tag: any AuthNFCTagCommanding,
+        passwordStore: AuthNFCPasswordStore
     ) async throws {
-        guard let hex = passwordStore.retrieve() else {
-            throw missing
-        }
-        let password: [UInt8]
-        do {
-            password = try AuthNFCPasswordService.passwordBytes(fromHex: hex)
-        } catch {
+        let hex: String
+        switch passwordStore.lookup() {
+        case .missing:
+            throw AuthNFCError.noStoredPassword
+        case .invalid:
             throw AuthNFCError.invalidPasswordFormat
+        case .valid(let stored):
+            hex = stored
         }
+        let password = try AuthNFCPasswordService.passwordBytes(fromHex: hex)
         let pack = AuthNFCPasswordService.derivedPACK(fromPasswordBytes: password)
         do {
             try await AuthNFCTagService.authenticate(tag, password: password, expectedPACK: pack)
@@ -207,8 +254,84 @@ enum AuthNFCProductionWriteGate {
             throw AuthNFCError.packMismatch
         } catch AuthNFCError.authenticationRejected {
             throw AuthNFCError.authenticationRejected
-        } catch {
+        } catch AuthNFCError.unexpectedResponse {
             throw AuthNFCError.authenticationRejected
+        } catch {
+            throw error
+        }
+    }
+}
+
+// MARK: - Production write dialogs
+
+struct AuthNFCProductionWriteAlert: Identifiable, Equatable {
+    let id = UUID()
+    let title: String
+    let message: String
+
+    static func == (lhs: AuthNFCProductionWriteAlert, rhs: AuthNFCProductionWriteAlert) -> Bool {
+        lhs.title == rhs.title && lhs.message == rhs.message
+    }
+
+    /// `nil` when the user already dismissed the system NFC sheet.
+    static func presented(for error: Error) -> AuthNFCProductionWriteAlert? {
+        if let readerError = error as? NFCReaderError,
+           readerError.code == .readerSessionInvalidationErrorUserCanceled {
+            return nil
+        }
+        guard let authError = error as? AuthNFCError else {
+            return AuthNFCProductionWriteAlert(
+                title: "NFC Communication Failed",
+                message: "The tag could not be read reliably. Keep it near the iPhone and try again. Nothing was written."
+            )
+        }
+        if case .userCancelled = authError {
+            return nil
+        }
+        return AuthNFCProductionWriteAlert(title: title(for: authError), message: message(for: authError))
+    }
+
+    private static func title(for error: AuthNFCError) -> String {
+        switch error {
+        case .unprotectedTag:
+            return "Unprotected Tag"
+        case .authenticationRejected, .packMismatch:
+            return "Wrong Tag"
+        case .unsupportedTagType, .versionIdentificationFailed:
+            return "Unsupported Tag"
+        case .configurationUnreadable:
+            return "Configuration Unreadable"
+        case .noStoredPassword:
+            return "No NFC Password Stored"
+        case .invalidPasswordFormat:
+            return "Invalid Password"
+        case .tagRemoved, .connectionFailed, .sessionTimeoutOrInvalidation, .nfcUnavailable:
+            return "NFC Communication Failed"
+        default:
+            return error.title
+        }
+    }
+
+    private static func message(for error: AuthNFCError) -> String {
+        switch error {
+        case .unprotectedTag:
+            return "This tag does not have password protection enabled. Writing is not allowed."
+        case .authenticationRejected, .packMismatch:
+            return "Authentication failed. This tag does not match the password configured in this app. Writing is not allowed."
+        case .unsupportedTagType, .versionIdentificationFailed:
+            return "This tag is not a supported NTAG213 or NTAG215. Writing is not allowed."
+        case .configurationUnreadable:
+            return "The tag password-protection settings could not be read reliably. Writing is not allowed."
+        case .noStoredPassword:
+            return "No NFC password is stored on this iPhone. Save an 8-character hexadecimal password before writing. Writing is not allowed."
+        case .invalidPasswordFormat:
+            return "The stored NFC password must be exactly eight hexadecimal characters. Writing is not allowed."
+        case .tagRemoved, .connectionFailed, .sessionTimeoutOrInvalidation:
+            return "The tag could not be read reliably. Keep it near the iPhone and try again. Nothing was written."
+        case .nfcUnavailable:
+            return "NFC is not available on this device. Writing is not allowed."
+        default:
+            return error.explanation
         }
     }
 }

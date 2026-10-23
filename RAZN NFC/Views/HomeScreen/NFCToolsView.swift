@@ -129,6 +129,7 @@ struct NFCToolsView: View {
         } message: {
             Text(vm.nfcAlertMessage)
         }
+        .authNFCProductionWriteAlert($vm.writeAlert, onDismiss: vm.dismissWriteAlert)
         .onAppear {
             AppStoreReviewManager.shared.recordAppLaunch()
             isTesterModeEnabled = TesterModeManager.shared.isEnabled
@@ -338,6 +339,31 @@ struct NFCToolsView: View {
         }
         .font(.custom(Constants.Fonts.interRegular, size: 14))
         .foregroundStyle(.white.opacity(0.3))
+    }
+}
+
+extension View {
+    /// Titled production-write failure dialog. Dismiss does not retry the write.
+    func authNFCProductionWriteAlert(
+        _ alert: Binding<AuthNFCProductionWriteAlert?>,
+        onDismiss: @escaping () -> Void = {}
+    ) -> some View {
+        self.alert(
+            alert.wrappedValue?.title ?? "",
+            isPresented: Binding(
+                get: { alert.wrappedValue != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        alert.wrappedValue = nil
+                        onDismiss()
+                    }
+                }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(alert.wrappedValue?.message ?? "")
+        }
     }
 }
 

@@ -143,6 +143,29 @@ enum AuthNFCProtection {
         let protectedFrom = Int(auth0)
         return last >= protectedFrom
     }
+
+    /// Production write rule for NTAG213/215.
+    ///
+    /// NXP: AUTH0 is the first page that requires PWD_AUTH. `0xFF`, or any value above the
+    /// variant PACK page, disables that mechanism. ACCESS.PROT only chooses write-only
+    /// (`0`) versus read-and-write (`1`) protection; neither value enables protection while
+    /// AUTH0 disables it, and neither value leaves a covered page writable without PWD_AUTH.
+    /// A value stored in the PWD page is not evidence that protection is enabled.
+    ///
+    /// The destination is protected only when every page in the span is at or after AUTH0.
+    static func productionDestinationIsFullyProtected(
+        startPage: UInt8,
+        pageCount: Int,
+        auth0: UInt8,
+        access: UInt8,
+        profile: AuthNFCTagProfile
+    ) -> Bool {
+        // CFG1 ACCESS is a required input. PROT is not a write bypass.
+        _ = access & AuthNFCConstants.accessBitPROT
+        guard pageCount > 0 else { return false }
+        guard isEffectivelyEnabled(auth0: auth0, profile: profile) else { return false }
+        return Int(startPage) >= Int(auth0)
+    }
 }
 
 struct AuthNFCVersionInfo: Equatable {

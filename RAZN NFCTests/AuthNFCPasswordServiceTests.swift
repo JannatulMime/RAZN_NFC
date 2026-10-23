@@ -14,7 +14,7 @@
 //  7. Write to protected tag with wrong password → authentication failed, no write
 //  8. Protected write without authentication must fail safely
 //  9. Read back written payload without authentication when PROT=0
-//  10. Regression: production NFC Write/Read on unprotected tags still works unchanged
+//  10. Production Write rejects unprotected NTAG213/215 (no WRITE). Production Read still needs no password.
 //
 
 import XCTest

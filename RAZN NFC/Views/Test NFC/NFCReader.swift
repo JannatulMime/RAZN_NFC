@@ -5,7 +5,7 @@ class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate, NFCTa
     @Published var message = "Waiting for NFC tag..."
     /// NDEF session used for production reads (never requires a password).
     private var ndefSession: NFCNDEFReaderSession?
-    /// Tag session used for production writes (may PWD_AUTH before writeNDEF).
+    /// Tag session used for production writes (PWD_AUTH, then page write).
     private var tagSession: NFCTagReaderSession?
     var onScanComplete: ((String) -> Void)?
     var onWriteComplete: ((Bool) -> Void)?
@@ -16,6 +16,11 @@ class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate, NFCTa
 
     @Published var alertMessage: String = ""
     @Published var showAlert: Bool = false
+    /// Titled dialog for a rejected production write. Reading does not set this.
+    @Published var writeAlert: AuthNFCProductionWriteAlert?
+    private var currentWriteGeneration: UInt = 0
+    private var completedWriteGeneration: UInt = 0
+    private var acceptedWriteGeneration: UInt = 0
 
     private let passwordStore: AuthNFCPasswordStore
 
@@ -32,17 +37,34 @@ class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate, NFCTa
 
     /// If `text` looks like a URL, we’ll write a URL record. Otherwise we write a Text record.
     func write(_ text: String, completion: @escaping (Bool) -> Void) {
-        onWriteComplete = completion
-        textToWrite = text
-        isWriting = true
-        startTagWriteSession()
+        beginWrite(text, completion: completion)
     }
 
     /// Convenience: explicitly write a URL (recommended for your use case)
     func writeURL(_ urlString: String, completion: @escaping (Bool) -> Void) {
+        beginWrite(urlString, completion: completion)
+    }
+
+    private func beginWrite(_ text: String, completion: @escaping (Bool) -> Void) {
+        if tagSession != nil {
+            let alert = AuthNFCProductionWriteAlert(
+                title: "NFC Busy",
+                message: "Another NFC session is already active. Wait for it to finish. Nothing was written."
+            )
+            DispatchQueue.main.async {
+                self.writeAlert = alert
+                completion(false)
+            }
+            return
+        }
+
+        currentWriteGeneration &+= 1
         onWriteComplete = completion
-        textToWrite = urlString
+        textToWrite = text
         isWriting = true
+        DispatchQueue.main.async {
+            self.writeAlert = nil
+        }
         startTagWriteSession()
     }
 
@@ -62,21 +84,31 @@ class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate, NFCTa
     }
 
     private func startTagWriteSession() {
+        let generation = currentWriteGeneration
         guard NFCTagReaderSession.readingAvailable else {
             NSLog("NFC is not available on this device")
-            alertMessage = "NFC is not available on this device"
-            showAlert = true
-            reportWriteFailure("NFC is not available on this device.")
+            failWrite(
+                session: nil,
+                generation: generation,
+                error: AuthNFCError.nfcUnavailable
+            )
             return
         }
 
         guard tagSession == nil else {
-            reportWriteFailure("Another NFC session is already active. Wait for it to finish.")
+            failWrite(
+                session: nil,
+                generation: generation,
+                alert: AuthNFCProductionWriteAlert(
+                    title: "NFC Busy",
+                    message: "Another NFC session is already active. Wait for it to finish. Nothing was written."
+                )
+            )
             return
         }
 
         guard let session = NFCTagReaderSession(pollingOption: .iso14443, delegate: self, queue: nil) else {
-            reportWriteFailure("NFC is not available on this device.")
+            failWrite(session: nil, generation: generation, error: AuthNFCError.nfcUnavailable)
             return
         }
         session.alertMessage = "Hold your iPhone near an NFC tag to write."
@@ -190,31 +222,39 @@ class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate, NFCTa
             session.invalidate(errorMessage: "Unexpected tag detection during write.")
             return
         }
+        guard acceptedWriteGeneration != currentWriteGeneration else { return }
+        acceptedWriteGeneration = currentWriteGeneration
+        let generation = currentWriteGeneration
 
         if tags.count > 1 {
-            session.invalidate(errorMessage: "More than 1 tag detected. Please try again with only one tag.")
-            reportWriteFailure("More than one tag was present. Use a single tag.")
+            failWrite(session: session, generation: generation, error: AuthNFCError.multipleTagsDetected)
             return
         }
 
         guard let first = tags.first else {
-            session.invalidate(errorMessage: "No tag detected")
-            reportWriteFailure("No NFC tag was detected during the session.")
+            failWrite(session: session, generation: generation, error: AuthNFCError.noTagDetected)
             return
         }
 
         guard case .miFare(let miFareTag) = first else {
-            session.invalidate(errorMessage: "Unsupported tag type for writing.")
-            reportWriteFailure("Unsupported or unidentified tag. Use an NTAG213, NTAG215, or NTAG216.")
+            failWrite(
+                session: session,
+                generation: generation,
+                error: AuthNFCError.unsupportedTagType(details: "The tag is not MiFare Ultralight/NTAG.")
+            )
             return
         }
 
         Task {
-            await self.performProductionWrite(session: session, tag: miFareTag)
+            await self.performProductionWrite(session: session, tag: miFareTag, generation: generation)
         }
     }
 
-    private func performProductionWrite(session: NFCTagReaderSession, tag: NFCMiFareTag) async {
+    private func performProductionWrite(
+        session: NFCTagReaderSession,
+        tag: NFCMiFareTag,
+        generation: UInt
+    ) async {
         do {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                 session.connect(to: .miFare(tag)) { error in
@@ -226,14 +266,19 @@ class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate, NFCTa
                 }
             }
         } catch {
-            session.invalidate(errorMessage: "Connection error")
-            reportWriteFailure("Could not connect to the tag. Keep the tag near the iPhone and try again.")
+            failWrite(session: session, generation: generation, error: error)
             return
         }
 
         guard let textToWrite else {
-            session.invalidate(errorMessage: "No text to write")
-            reportWriteFailure("No text to write.")
+            failWrite(
+                session: session,
+                generation: generation,
+                alert: AuthNFCProductionWriteAlert(
+                    title: "Write Failed",
+                    message: "No text to write. Nothing was written."
+                )
+            )
             return
         }
 
@@ -246,80 +291,65 @@ class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate, NFCTa
             message = NFCNDEFMessage(records: [textPayload])
         }
 
-        // Auth gate: PWD_AUTH only when protected destination pages require it.
-        // Never writes payload before this returns successfully when auth is required.
-        //
-        // After MiFare commands, Core NFC queryNDEFStatus/writeNDEF often fail with
-        // NFCError 104 ("Stack Error"). Write the same NDEF URI/Text payload via
-        // Type 2 page WRITE in this session instead.
-        let prep: AuthNFCProductionWritePrep
+        // Password protection and PWD_AUTH both have to succeed before any WRITE.
+        // Page WRITE is used because queryNDEFStatus/writeNDEF often returns NFCError 104
+        // after MiFare commands in the same session.
         do {
-            prep = try await AuthNFCProductionWriteGate.prepareAuthenticatedWrite(
-                tag: tag,
-                ndefMessage: message,
-                passwordStore: passwordStore
-            )
-        } catch let error as AuthNFCError {
-            let userMessage = productionWriteErrorMessage(for: error)
-            session.invalidate(errorMessage: error.title)
-            reportWriteFailure(userMessage)
-            return
-        } catch {
-            session.invalidate(errorMessage: "Authentication failed")
-            reportWriteFailure(
-                "Authentication failed. Check the stored password and try again. No new payload was written by this operation."
-            )
-            return
-        }
-
-        do {
-            try await AuthNFCProductionWriteGate.writeNDEFViaPages(
+            try await AuthNFCProductionWriteGate.writeProtectedNDEF(
                 tag: tag,
                 message: message,
-                profile: prep.profile,
-                authenticated: prep.authenticated
+                passwordStore: passwordStore
             )
-            session.alertMessage = "Write successful!"
-            session.invalidate()
-            DispatchQueue.main.async {
-                self.onWriteComplete?(true)
-            }
-        } catch let error as AuthNFCError {
-            session.invalidate(errorMessage: error.title)
-            reportWriteFailure(productionWriteErrorMessage(for: error))
+            finishWrite(session: session, generation: generation, success: true, alert: nil)
         } catch {
-            session.invalidate(errorMessage: "Write failed")
-            reportWriteFailure(
-                "The tag could not be written. Keep the tag near the iPhone and try again. If the problem continues, check the tag's protection settings."
-            )
+            failWrite(session: session, generation: generation, error: error)
         }
     }
 
-    private func productionWriteErrorMessage(for error: AuthNFCError) -> String {
-        switch error {
-        case .noStoredPassword:
-            return error.explanation
-        case .authenticationRejected, .packMismatch:
-            return "Authentication failed. Check the stored password and try again. No new payload was written by this operation."
-        case .invalidPasswordFormat:
-            return error.explanation
-        case .unsupportedTagType, .versionIdentificationFailed:
-            return "Unsupported or unidentified tag. Use an NTAG213, NTAG215, or NTAG216."
-        case .userCancelled:
-            return "NFC session cancelled."
-        case .tagRemoved, .sessionTimeoutOrInvalidation:
-            return "The tag was removed or the NFC session timed out. Keep the tag near the iPhone and try again."
-        case .writeProtectionOrLock:
-            return "The tag could not be written. Keep the tag near the iPhone and try again. If the problem continues, check the tag's protection settings."
-        default:
-            return error.explanation
+    private func failWrite(session: NFCTagReaderSession?, generation: UInt, error: Error) {
+        let alert = AuthNFCProductionWriteAlert.presented(for: error)
+        if alert == nil, error is AuthNFCError || (error as? NFCReaderError)?.code == .readerSessionInvalidationErrorUserCanceled {
+            finishWrite(session: session, generation: generation, success: false, alert: nil, invalidateSilently: true)
+            return
         }
+        failWrite(session: session, generation: generation, alert: alert)
     }
 
-    private func reportWriteFailure(_ message: String) {
+    private func failWrite(
+        session: NFCTagReaderSession?,
+        generation: UInt,
+        alert: AuthNFCProductionWriteAlert?
+    ) {
+        finishWrite(session: session, generation: generation, success: false, alert: alert, invalidateSilently: false)
+    }
+
+    private func finishWrite(
+        session: NFCTagReaderSession?,
+        generation: UInt,
+        success: Bool,
+        alert: AuthNFCProductionWriteAlert?,
+        invalidateSilently: Bool = false
+    ) {
+        guard generation == currentWriteGeneration, completedWriteGeneration != generation else { return }
+        completedWriteGeneration = generation
+        let completion = onWriteComplete
+        onWriteComplete = nil
+        if let session {
+            if success {
+                session.alertMessage = "Write successful!"
+                session.invalidate()
+            } else if let alert, !invalidateSilently {
+                session.invalidate(errorMessage: alert.message)
+            } else if !invalidateSilently {
+                session.invalidate(errorMessage: "The tag could not be written. Nothing was written.")
+            } else {
+                session.invalidate()
+            }
+        }
         DispatchQueue.main.async {
-            self.onWriteFailureMessage?(message)
-            self.onWriteComplete?(false)
+            self.isWriting = false
+            self.writeAlert = alert
+            completion?(success)
         }
     }
 

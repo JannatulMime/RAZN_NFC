@@ -12,16 +12,18 @@ struct NFCReaderView: View {
     @StateObject private var nfcReader = NFCReader()
     
     var body: some View {
-        Text("Scan")
-            .onTapGesture {
-                scanTag()
-            }
-        
-        Text("Write")
-            .onTapGesture {
-                writeTag()
-            }
-        
+        Group {
+            Text("Scan")
+                .onTapGesture {
+                    scanTag()
+                }
+
+            Text("Write")
+                .onTapGesture {
+                    writeTag()
+                }
+        }
+        .authNFCProductionWriteAlert($nfcReader.writeAlert)
     }
     
     
