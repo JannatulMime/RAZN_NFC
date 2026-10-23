@@ -116,9 +116,38 @@ final class AuthNFCPasswordStoreTests: XCTestCase {
     func testNTAG213And215ProfilesRemainDistinct() {
         XCTAssertNotEqual(AuthNFCTagProfile.ntag213.cfg0Page, AuthNFCTagProfile.ntag215.cfg0Page)
         XCTAssertNotEqual(AuthNFCTagProfile.ntag213.pwdPage, AuthNFCTagProfile.ntag215.pwdPage)
+        XCTAssertEqual(AuthNFCTagProfile.ntag213.cfg0Page, 0x29)
+        XCTAssertEqual(AuthNFCTagProfile.ntag215.cfg0Page, 0x83)
         XCTAssertEqual(AuthNFCTagProfile.profile(forStorageSize: 0x0F)?.variant, .ntag213)
         XCTAssertEqual(AuthNFCTagProfile.profile(forStorageSize: 0x11)?.variant, .ntag215)
         XCTAssertNil(AuthNFCTagProfile.profile(forStorageSize: 0x10))
+    }
+
+    func testAuth0DisabledDisablesEffectiveProtectionOn213And215() {
+        XCTAssertFalse(
+            AuthNFCProtection.isEffectivelyEnabled(
+                auth0: AuthNFCConstants.auth0Disabled,
+                profile: .ntag213
+            )
+        )
+        XCTAssertFalse(
+            AuthNFCProtection.isEffectivelyEnabled(
+                auth0: AuthNFCConstants.auth0Disabled,
+                profile: .ntag215
+            )
+        )
+        XCTAssertTrue(
+            AuthNFCProtection.isEffectivelyEnabled(
+                auth0: AuthNFCTagProfile.ntag213.userMemoryStartPage,
+                profile: .ntag213
+            )
+        )
+        XCTAssertTrue(
+            AuthNFCProtection.isEffectivelyEnabled(
+                auth0: AuthNFCTagProfile.ntag215.userMemoryStartPage,
+                profile: .ntag215
+            )
+        )
     }
 
     func testType2NDEFEncodingProducesReadableURITLV() throws {

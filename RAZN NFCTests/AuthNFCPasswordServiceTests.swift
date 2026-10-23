@@ -134,6 +134,33 @@ final class AuthNFCPasswordServiceTests: XCTestCase {
         XCTAssertEqual(page[3], 0x04)
     }
 
+    func testMakeCFG0DisableAuth0PreservesUnrelatedBytes() {
+        let snapshot = AuthNFCConfigSnapshot(
+            mirror: 0xAB,
+            mirrorPage: 0xCD,
+            auth0: 0x04,
+            access: 0,
+            cfg0Raw: [0xAB, 0x00, 0xCD, 0x04],
+            cfg1Raw: [0x80, 0, 0, 0]
+        )
+        let page = AuthNFCPasswordService.makeCFG0(
+            preserving: snapshot,
+            auth0: AuthNFCConstants.auth0Disabled
+        )
+        XCTAssertEqual(page, [0xAB, 0x00, 0xCD, 0xFF])
+        XCTAssertEqual(page[3], AuthNFCConstants.auth0Disabled)
+        // ACCESS / CFG1 must not be touched by CFG0 builder.
+        XCTAssertEqual(snapshot.cfg1Raw[0], 0x80)
+    }
+
+    func testUnregisterVerificationFailedDoesNotExposePassword() {
+        let error = AuthNFCError.configurationVerificationFailed
+        XCTAssertEqual(error.title, "Verification Failed")
+        XCTAssertTrue(error.explanation.contains("could not be verified"))
+        XCTAssertFalse(error.explanation.lowercased().contains("a1b2"))
+        XCTAssertFalse((error.technicalDetails ?? "").lowercased().contains("password:"))
+    }
+
     func testConfigSnapshotFlags() throws {
         let snap = try AuthNFCConfigSnapshot.parse(
             cfg0: Data([0x00, 0x00, 0x00, 0x04]),

@@ -29,6 +29,7 @@ enum AuthNFCError: Error, Equatable {
     case readFailure(details: String)
     case noReadableContent
     case partialConfigurationFailure(details: String)
+    case configurationVerificationFailed
     case partialWriteFailure(details: String)
     case sessionTimeoutOrInvalidation(details: String)
     case userCancelled
@@ -84,6 +85,8 @@ enum AuthNFCError: Error, Equatable {
             return "No Readable Content"
         case .partialConfigurationFailure:
             return "Partial Configuration Failure"
+        case .configurationVerificationFailed:
+            return "Verification Failed"
         case .partialWriteFailure:
             return "Partial Write Failure"
         case .sessionTimeoutOrInvalidation:
@@ -128,7 +131,7 @@ enum AuthNFCError: Error, Equatable {
         case .authenticationRequired:
             return "The relevant memory is password-protected. This operation cannot continue without a successful PWD_AUTH, and it will not bypass tag protection."
         case .noStoredPassword:
-            return "No NFC password is stored. Tap \"Store NFC Password\" before writing to a password-protected tag."
+            return "No NFC password is stored. Tap \"Store NFC Password\" and enter a valid 8-character hex password before writing to a protected tag or unregistering."
         case .packMismatch:
             return "Authentication returned a PACK that does not match the expected acknowledgement for this password."
         case .tagNotConfiguredForProtection:
@@ -149,6 +152,8 @@ enum AuthNFCError: Error, Equatable {
             return "Reading from the tag failed. \(details)"
         case .partialConfigurationFailure(let details):
             return "Configuration may be incomplete. The tag might need manual recovery with a known password or a fresh test tag. \(details)"
+        case .configurationVerificationFailed:
+            return "The configuration write may have completed, but the final AUTH0 state could not be verified as disabled (0xFF). Do not assume password-based protection was removed."
         case .partialWriteFailure(let details):
             return "Some pages may have been written before the failure. \(details)"
         case .sessionTimeoutOrInvalidation(let details):
@@ -193,7 +198,7 @@ enum AuthNFCError: Error, Equatable {
         case .authenticationRequired:
             return "Use Authenticate & Write with the correct password for protected writes, or Read Content with a password if the tag uses read protection."
         case .noStoredPassword:
-            return "Open Store NFC Password, enter the same 8-character hex password configured on the tag, then retry Write."
+            return "Open Store NFC Password, enter the same 8-character hex password configured on the tag, then retry Write or Unregister."
         case .packMismatch:
             return "Use the same password encoding as registration. If the tag was configured elsewhere, use a fresh test tag."
         case .tagNotConfiguredForProtection:
@@ -214,6 +219,8 @@ enum AuthNFCError: Error, Equatable {
             return "Hold the tag steady and try reading again."
         case .partialConfigurationFailure:
             return "Do not assume success. Retry only if you know the password, or switch to a fresh test tag."
+        case .configurationVerificationFailed:
+            return "Keep the tag still and retry Unregister. Do not claim the tag is unprotected until verification succeeds."
         case .sessionTimeoutOrInvalidation, .tagRemoved:
             return "Start again and keep the tag in place until the sheet dismisses."
         case .userCancelled:
@@ -250,6 +257,8 @@ enum AuthNFCError: Error, Equatable {
             return "ACCESS.CFGLCK (CFG1 bit 6) permanently locks CFG0/CFG1 after power cycle."
         case .tagNotConfiguredForProtection:
             return "AUTH0 (CFG0 byte 3) is 0xFF when protection is disabled. This demo sets AUTH0 to 0x04 for write protection of user memory."
+        case .configurationVerificationFailed:
+            return "Expected AUTH0=0xFF on the variant CFG0 page after unregister. Local password is not cleared when verification fails."
         default:
             return nil
         }
