@@ -63,7 +63,16 @@ struct NFCToolsView: View {
                 
 
                 discoverButton
-                    .padding(.bottom, 0)
+                    .padding(.bottom, 8)
+
+                Button("NTAG Auth Demo") {
+                    InteractionFeedback.tap()
+                    path.append(.AuthNFCDemo)
+                }
+                .font(.custom(Constants.Fonts.interRegular, size: 14))
+                .foregroundStyle(Color.brandBlue.opacity(0.85))
+                .accessibilityLabel("NTAG Auth Demo")
+                .padding(.bottom, 0)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .padding(.horizontal, 20)
