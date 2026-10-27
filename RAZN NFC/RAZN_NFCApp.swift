@@ -24,13 +24,14 @@ struct RAZN_NFCApp: App {
     }
 
     var body: some Scene {
-        @StateObject var nfcWriteInfoVM : NFCWriteInfoVM = NFCWriteInfoVM()
-       
+        @StateObject var nfcWriteInfoVM: NFCWriteInfoVM = NFCWriteInfoVM()
+
         WindowGroup {
-            
-            RootView()
-                .environmentObject(nfcWriteInfoVM)
-                .keyboardLayoutLocked()
+            VersionCheckGateView {
+                RootView()
+                    .environmentObject(nfcWriteInfoVM)
+                    .keyboardLayoutLocked()
+            }
             //ContentView()
         }
     }

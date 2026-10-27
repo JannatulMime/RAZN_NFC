@@ -10,6 +10,7 @@
 		9685DA482FB757F600C7F36A /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 9685DA472FB757F600C7F36A /* FirebaseAnalytics */; };
 		9685DA4A2FB757F600C7F36A /* FirebaseAnalyticsCore in Frameworks */ = {isa = PBXBuildFile; productRef = 9685DA492FB757F600C7F36A /* FirebaseAnalyticsCore */; };
 		9685DA4C2FB757F600C7F36A /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 9685DA4B2FB757F600C7F36A /* FirebaseCore */; };
+		9685DA4E2FB757F600C7F36A /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 9685DA4D2FB757F600C7F36A /* FirebaseFirestore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -48,6 +49,7 @@
 				9685DA482FB757F600C7F36A /* FirebaseAnalytics in Frameworks */,
 				9685DA4C2FB757F600C7F36A /* FirebaseCore in Frameworks */,
 				9685DA4A2FB757F600C7F36A /* FirebaseAnalyticsCore in Frameworks */,
+				9685DA4E2FB757F600C7F36A /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -102,6 +104,7 @@
 				9685DA472FB757F600C7F36A /* FirebaseAnalytics */,
 				9685DA492FB757F600C7F36A /* FirebaseAnalyticsCore */,
 				9685DA4B2FB757F600C7F36A /* FirebaseCore */,
+				9685DA4D2FB757F600C7F36A /* FirebaseFirestore */,
 			);
 			productName = "RAZN NFC";
 			productReference = F32C47B42E44E9B200869305 /* RAZN NFC.app */;
@@ -355,7 +358,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 5.0;
+				MARKETING_VERSION = 6.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.razvanVladutChiricia.RAZNNFC;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -393,7 +396,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 5.0;
+				MARKETING_VERSION = 6.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.razvanVladutChiricia.RAZNNFC;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -516,6 +519,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 9685DA462FB757F600C7F36A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCore;
+		};
+		9685DA4D2FB757F600C7F36A /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9685DA462FB757F600C7F36A /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
