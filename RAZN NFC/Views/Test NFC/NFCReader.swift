@@ -22,13 +22,6 @@ class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate, NFCTa
     private var completedWriteGeneration: UInt = 0
     private var acceptedWriteGeneration: UInt = 0
 
-    private let passwordStore: AuthNFCPasswordStore
-
-    init(passwordStore: AuthNFCPasswordStore = AuthNFCPasswordStore()) {
-        self.passwordStore = passwordStore
-        super.init()
-    }
-
     func scan(completion: @escaping (String) -> Void) {
         onScanComplete = completion
         isWriting = false
@@ -297,8 +290,7 @@ class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate, NFCTa
         do {
             try await AuthNFCProductionWriteGate.writeProtectedNDEF(
                 tag: tag,
-                message: message,
-                passwordStore: passwordStore
+                message: message
             )
             finishWrite(session: session, generation: generation, success: true, alert: nil)
         } catch {

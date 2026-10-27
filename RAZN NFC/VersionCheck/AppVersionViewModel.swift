@@ -49,8 +49,27 @@ final class AppVersionViewModel: ObservableObject {
     }
 
     func openAppStore() {
-        guard case .updateRequired(_, let url) = state, let url else { return }
+        let url: URL
+        if case .updateRequired(_, let resolved) = state, let resolved {
+            url = Self.appStoreOpenURL(from: resolved)
+        } else {
+            url = Self.appStoreOpenURL(from: Constants.getAppLink())
+        }
+        print("[AppVersion] Opening App Store: \(url.absoluteString)")
         urlOpener(url)
+    }
+
+    /// Prefer the App Store app (`itms-apps://`) over Safari for the listing URL.
+    static func appStoreOpenURL(from url: URL) -> URL {
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            return url
+        }
+        let scheme = components.scheme?.lowercased()
+        if scheme == "http" || scheme == "https" {
+            components.scheme = "itms-apps"
+            return components.url ?? url
+        }
+        return url
     }
 
     // MARK: - Private

@@ -6,8 +6,8 @@
 //
 //  Still needs a physical tag:
 //  1. Unprotected NTAG213 and NTAG215 show "Unprotected Tag" and do not write.
-//  2. NTAG213/215 with AUTH0 at or before page 04h and the stored password writes.
-//  3. The same tag with a different stored password shows "Wrong Tag" and does not write.
+//  2. NTAG213/215 with AUTH0 at or before page 04h and the Tag Manager password writes.
+//  3. The same tag with a different password shows "Wrong Tag" and does not write.
 //  4. PROT=1 tags whose CFG pages NAK before PWD_AUTH are rejected as unreadable, not written.
 //  5. Production Read still completes with no password.
 //
@@ -18,29 +18,11 @@ import XCTest
 
 final class AuthNFCProductionWriteGateTests: XCTestCase {
 
-    private var defaults: UserDefaults!
-    private var store: AuthNFCPasswordStore!
-    private let suiteName = "AuthNFCProductionWriteGateTests.\(UUID().uuidString)"
-    private let passwordHex = "A1B2C3D4"
-
-    override func setUp() {
-        super.setUp()
-        defaults = UserDefaults(suiteName: suiteName)
-        defaults.removePersistentDomain(forName: suiteName)
-        store = AuthNFCPasswordStore(defaults: defaults)
-    }
-
-    override func tearDown() {
-        defaults.removePersistentDomain(forName: suiteName)
-        defaults = nil
-        store = nil
-        super.tearDown()
-    }
+    private let passwordHex = AuthNFCConstants.tagManagerPasswordHex
 
     func testUnprotectedNTAG213IsRejectedWithNoWrite() async throws {
-        try store.save(hexPassword: passwordHex)
         let tag = makeTag(profile: .ntag213, auth0: 0xFF, access: 0x00)
-        try await expectRejection(tag, .unprotectedTag, passwordStore: store)
+        try await expectRejection(tag, .unprotectedTag)
         XCTAssertFalse(tag.didAuthenticate)
         XCTAssertTrue(tag.commands.contains(Data([AuthNFCConstants.cmdRead, AuthNFCTagProfile.ntag213.cfg0Page])))
         let alert = try XCTUnwrap(AuthNFCProductionWriteAlert.presented(for: AuthNFCError.unprotectedTag))
@@ -52,9 +34,8 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
     }
 
     func testUnprotectedNTAG215IsRejectedWithNoWrite() async throws {
-        try store.save(hexPassword: passwordHex)
         let tag = makeTag(profile: .ntag215, auth0: 0xFF, access: 0x80)
-        try await expectRejection(tag, .unprotectedTag, passwordStore: store)
+        try await expectRejection(tag, .unprotectedTag)
         XCTAssertFalse(tag.didAuthenticate)
         XCTAssertTrue(tag.commands.contains(Data([AuthNFCConstants.cmdRead, AuthNFCTagProfile.ntag215.cfg0Page])))
         XCTAssertFalse(tag.commands.contains(Data([AuthNFCConstants.cmdRead, AuthNFCTagProfile.ntag213.cfg0Page])))
@@ -110,14 +91,12 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
 
     func testProtectedTagWithCorrectPasswordAuthenticatesThenWrites() async throws {
         let password = try AuthNFCPasswordService.passwordBytes(fromHex: passwordHex)
-        try store.save(hexPassword: passwordHex)
         let profile = AuthNFCTagProfile.ntag213
         let tag = makeTag(profile: profile, auth0: 0x04, access: 0x00, acceptedPassword: password)
 
         let prep = try await AuthNFCProductionWriteGate.prepareAuthenticatedWrite(
             tag: tag,
-            ndefMessage: sampleMessage(),
-            passwordStore: store
+            ndefMessage: sampleMessage()
         )
         XCTAssertTrue(prep.authenticated)
         XCTAssertEqual(prep.profile, profile)
@@ -135,27 +114,24 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
 
     func testProtectedNTAG215WithReadAndWriteProtStillRequiresAuthBeforeWrite() async throws {
         let password = try AuthNFCPasswordService.passwordBytes(fromHex: passwordHex)
-        try store.save(hexPassword: passwordHex)
         let profile = AuthNFCTagProfile.ntag215
         let tag = makeTag(profile: profile, auth0: 0x04, access: 0x80, acceptedPassword: password)
         try await AuthNFCProductionWriteGate.writeProtectedNDEF(
             tag: tag,
-            message: sampleMessage(),
-            passwordStore: store
+            message: sampleMessage()
         )
         assertWritesFollowAuthentication(on: tag, profile: profile)
         XCTAssertTrue(tag.commands.contains(Data([AuthNFCConstants.cmdRead, profile.cfg0Page])))
     }
 
     func testProtectedTagWithWrongPasswordDoesNotWrite() async throws {
-        try store.save(hexPassword: passwordHex)
         let tag = makeTag(
             profile: .ntag215,
             auth0: 0x04,
             access: 0x00,
             acceptedPassword: [0xFF, 0xFF, 0xFF, 0xFF]
         )
-        try await expectRejection(tag, .authenticationRejected, passwordStore: store)
+        try await expectRejection(tag, .authenticationRejected)
         XCTAssertTrue(tag.didAuthenticate)
         let alert = try XCTUnwrap(AuthNFCProductionWriteAlert.presented(for: AuthNFCError.authenticationRejected))
         XCTAssertEqual(alert.title, "Wrong Tag")
@@ -167,7 +143,6 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
 
     func testPackMismatchIsWrongTagAndDoesNotWrite() async throws {
         let password = try AuthNFCPasswordService.passwordBytes(fromHex: passwordHex)
-        try store.save(hexPassword: passwordHex)
         let derived = AuthNFCPasswordService.derivedPACK(fromPasswordBytes: password)
         let wrongPACK: [UInt8] = derived == [0x00, 0x00] ? [0xFF, 0xFF] : [0x00, 0x00]
         let tag = makeTag(
@@ -177,39 +152,19 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
             acceptedPassword: password,
             packResponse: wrongPACK
         )
-        try await expectRejection(tag, .packMismatch, passwordStore: store)
+        try await expectRejection(tag, .packMismatch)
         XCTAssertEqual(AuthNFCProductionWriteAlert.presented(for: AuthNFCError.packMismatch)?.title, "Wrong Tag")
-    }
-
-    func testMissingPasswordOnProtectedTagDoesNotAuthenticateOrWrite() async throws {
-        let tag = makeTag(profile: .ntag213, auth0: 0x04, access: 0x00, acceptedPassword: [1, 2, 3, 4])
-        try await expectRejection(tag, .noStoredPassword, passwordStore: store)
-        XCTAssertFalse(tag.didAuthenticate)
-        let alert = try XCTUnwrap(AuthNFCProductionWriteAlert.presented(for: AuthNFCError.noStoredPassword))
-        XCTAssertEqual(alert.title, "No NFC Password Stored")
-        XCTAssertNotEqual(alert.title, "Wrong Tag")
-    }
-
-    func testInvalidStoredPasswordDoesNotAuthenticateOrWrite() async throws {
-        defaults.set("not-hex", forKey: AuthNFCPasswordStore.defaultsKey)
-        let tag = makeTag(profile: .ntag215, auth0: 0x04)
-        try await expectRejection(tag, .invalidPasswordFormat, passwordStore: store)
-        XCTAssertFalse(tag.didAuthenticate)
-        let alert = try XCTUnwrap(AuthNFCProductionWriteAlert.presented(for: AuthNFCError.invalidPasswordFormat))
-        XCTAssertEqual(alert.title, "Invalid Password")
-        XCTAssertNotEqual(alert.title, "Wrong Tag")
     }
 
     func testUnprotectedTagIsRejectedBeforePasswordIsConsulted() async throws {
         let tag = makeTag(profile: .ntag213, auth0: 0xFF)
-        try await expectRejection(tag, .unprotectedTag, passwordStore: store)
+        try await expectRejection(tag, .unprotectedTag)
         XCTAssertFalse(tag.didAuthenticate)
     }
 
     func testDestinationNotFullyCoveredByAuth0IsRejected() async throws {
-        try store.save(hexPassword: passwordHex)
         let tag = makeTag(profile: .ntag215, auth0: 0x20, access: 0x00)
-        try await expectRejection(tag, .unprotectedTag, passwordStore: store)
+        try await expectRejection(tag, .unprotectedTag)
         XCTAssertFalse(tag.didAuthenticate)
     }
 
@@ -218,8 +173,7 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
         do {
             try await AuthNFCProductionWriteGate.writeProtectedNDEF(
                 tag: tag,
-                message: sampleMessage(),
-                passwordStore: store
+                message: sampleMessage()
             )
             XCTFail("Expected unsupported tag")
         } catch let error as AuthNFCError {
@@ -238,13 +192,11 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
     }
 
     func testNTAG216AndUnknownStorageAreRejected() async throws {
-        try store.save(hexPassword: passwordHex)
         let ntag216 = makeTag(profile: .ntag216, auth0: 0x04, storageSize: AuthNFCConstants.ntag216StorageSize)
         do {
             try await AuthNFCProductionWriteGate.writeProtectedNDEF(
                 tag: ntag216,
-                message: sampleMessage(),
-                passwordStore: store
+                message: sampleMessage()
             )
             XCTFail("Expected NTAG216 rejection")
         } catch let error as AuthNFCError {
@@ -261,8 +213,7 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
         do {
             try await AuthNFCProductionWriteGate.writeProtectedNDEF(
                 tag: unknown,
-                message: sampleMessage(),
-                passwordStore: store
+                message: sampleMessage()
             )
             XCTFail("Expected unknown storage rejection")
         } catch let error as AuthNFCError {
@@ -276,13 +227,12 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
     }
 
     func testConfigurationReadFailureIsNotTreatedAsUnprotected() async throws {
-        try store.save(hexPassword: passwordHex)
         let tag = makeTag(
             profile: .ntag213,
             auth0: 0xFF,
             configReadError: AuthNFCError.unexpectedResponse(details: "NAK")
         )
-        try await expectRejection(tag, .configurationUnreadable, passwordStore: store)
+        try await expectRejection(tag, .configurationUnreadable)
         XCTAssertFalse(tag.didAuthenticate)
         let alert = try XCTUnwrap(AuthNFCProductionWriteAlert.presented(for: AuthNFCError.configurationUnreadable))
         XCTAssertEqual(alert.title, "Configuration Unreadable")
@@ -297,7 +247,7 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
             auth0: 0x04,
             configReadError: AuthNFCError.tagRemoved
         )
-        try await expectRejection(tag, .tagRemoved, passwordStore: store)
+        try await expectRejection(tag, .tagRemoved)
         XCTAssertFalse(tag.didAuthenticate)
         let alert = try XCTUnwrap(AuthNFCProductionWriteAlert.presented(for: AuthNFCError.tagRemoved))
         XCTAssertEqual(alert.title, "NFC Communication Failed")
@@ -360,15 +310,13 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
     private func expectRejection(
         _ tag: ScriptedAuthNFCTag,
         _ expected: AuthNFCError,
-        passwordStore: AuthNFCPasswordStore,
         file: StaticString = #filePath,
         line: UInt = #line
     ) async throws {
         do {
             try await AuthNFCProductionWriteGate.writeProtectedNDEF(
                 tag: tag,
-                message: sampleMessage(),
-                passwordStore: passwordStore
+                message: sampleMessage()
             )
             XCTFail("Expected \(expected)", file: file, line: line)
         } catch let error as AuthNFCError {

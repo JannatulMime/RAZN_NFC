@@ -325,6 +325,14 @@ final class AppVersionViewModelTests: XCTestCase {
         XCTAssertNil(AppVersionConfig.validHTTPURL(from: ""))
         XCTAssertNil(AppVersionConfig.validHTTPURL(from: "not a url"))
     }
+
+    func testAppStoreOpenURLUsesItmsAppsScheme() {
+        let https = URL(string: "https://apps.apple.com/app/id6749680572")!
+        let opened = AppVersionViewModel.appStoreOpenURL(from: https)
+        XCTAssertEqual(opened.scheme, "itms-apps")
+        XCTAssertEqual(opened.host, "apps.apple.com")
+        XCTAssertEqual(opened.path, "/app/id6749680572")
+    }
 }
 
 private final class MockInstalledVersionBox: InstalledVersionProviding, @unchecked Sendable {

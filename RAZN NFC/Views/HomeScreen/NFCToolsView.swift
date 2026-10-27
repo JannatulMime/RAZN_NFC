@@ -26,7 +26,6 @@ struct NFCToolsView: View {
     @State private var testerToastMessage: String?
     @State private var testerToastTask: Task<Void, Never>?
     @State private var isTesterModeEnabled = TesterModeManager.shared.isEnabled
-    @State private var showPasswordSettings = false
 
     private let multiTapThreshold = 5
     private let multiTapWindow: TimeInterval = 10.0
@@ -65,24 +64,6 @@ struct NFCToolsView: View {
 
                 discoverButton
                     .padding(.bottom, 8)
-
-                Button("Store NFC Password") {
-                    InteractionFeedback.tap()
-                    showPasswordSettings = true
-                }
-                .font(.custom(Constants.Fonts.interRegular, size: 14))
-                .foregroundStyle(.white.opacity(0.3))
-                .accessibilityLabel("Store NFC Password")
-                .padding(.bottom, 8)
-
-                Button("NTAG Auth Demo") {
-                    InteractionFeedback.tap()
-                    path.append(.AuthNFCDemo)
-                }
-                .font(.custom(Constants.Fonts.interRegular, size: 14))
-                .foregroundStyle(Color.brandBlue.opacity(0.85))
-                .accessibilityLabel("NTAG Auth Demo")
-                .padding(.bottom, 0)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .padding(.horizontal, 20)
@@ -90,20 +71,22 @@ struct NFCToolsView: View {
           //  .background(Color.green)
            
 
-            // Always visible for testing; gate with `isTesterModeEnabled` again before release.
-            VStack {
-                Spacer()
-                HStack {
+            if isTesterModeEnabled {
+                VStack {
                     Spacer()
-                    TagManagerFloatingButton {
-                        InteractionFeedback.tap()
-                        path.append(.TagManager)
+                    HStack {
+                        Spacer()
+                        TagManagerFloatingButton {
+                            InteractionFeedback.tap()
+                            path.append(.TagManager)
+                        }
+                        .padding(.trailing, 20)
+                        .padding(.bottom, 72)
                     }
-                    .padding(.trailing, 20)
-                    .padding(.bottom, 72)
                 }
+                .allowsHitTesting(true)
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
             }
-            .allowsHitTesting(true)
 
             if let message = vm.toastMessage ?? testerToastMessage {
                 ToastView(message: message)
@@ -132,10 +115,6 @@ struct NFCToolsView: View {
                 excludedActivityTypes: [.assignToContact, .print],
                 onComplete: { _ in }
             )
-        }
-        .sheet(isPresented: $showPasswordSettings) {
-            AuthNFCPasswordSettingsView()
-                .presentationDetents([.medium, .large])
         }
         .alert("NFC", isPresented: $vm.showNFCAlert) {
             Button("OK") {

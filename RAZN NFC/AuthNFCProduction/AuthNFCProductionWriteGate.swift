@@ -5,7 +5,8 @@
 //  Authentication gate + Type 2 NDEF page writer for the production write path.
 //  A production write is sent only after the tag is confirmed to be an NTAG213 or
 //  NTAG215 whose destination pages are password-protected, and PWD_AUTH with the
-//  stored password succeeds. Unprotected tags and failed authentication do not write.
+//  Tag Manager password (AuthNFCConstants.tagManagerPasswordHex) succeeds.
+//  Unprotected tags and failed authentication do not write.
 //
 //  After MiFare commands (GET_VERSION / PWD_AUTH), Core NFC's queryNDEFStatus/writeNDEF
 //  often fails with NFCError 104 ("Stack Error"). Writing the same NDEF payload via
@@ -26,8 +27,7 @@ enum AuthNFCProductionWriteGate {
     /// Does not write payload or configuration pages.
     static func prepareAuthenticatedWrite(
         tag: any AuthNFCTagCommanding,
-        ndefMessage: NFCNDEFMessage,
-        passwordStore: AuthNFCPasswordStore
+        ndefMessage: NFCNDEFMessage
     ) async throws -> AuthNFCProductionWritePrep {
         let (_, profile) = try await AuthNFCTagService.identifySupportedTag(tag)
         guard profile.variant == .ntag213 || profile.variant == .ntag215 else {
@@ -52,33 +52,29 @@ enum AuthNFCProductionWriteGate {
             throw AuthNFCError.unprotectedTag
         }
 
-        try await authenticateWithStoredPassword(tag: tag, passwordStore: passwordStore)
+        try await authenticateWithTagManagerPassword(tag: tag)
         return AuthNFCProductionWritePrep(authenticated: true, profile: profile)
     }
 
     /// Production entry point for a live Core NFC tag.
     static func writeProtectedNDEF(
         tag: NFCMiFareTag,
-        message: NFCNDEFMessage,
-        passwordStore: AuthNFCPasswordStore
+        message: NFCNDEFMessage
     ) async throws {
         try await writeProtectedNDEF(
             tag: AuthNFCMiFareCommandBox(tag: tag),
-            message: message,
-            passwordStore: passwordStore
+            message: message
         )
     }
 
     /// Production entry point. Writes only after `prepareAuthenticatedWrite` succeeds.
     static func writeProtectedNDEF(
         tag: any AuthNFCTagCommanding,
-        message: NFCNDEFMessage,
-        passwordStore: AuthNFCPasswordStore
+        message: NFCNDEFMessage
     ) async throws {
         let prep = try await prepareAuthenticatedWrite(
             tag: tag,
-            ndefMessage: message,
-            passwordStore: passwordStore
+            ndefMessage: message
         )
         guard prep.authenticated else {
             throw AuthNFCError.authenticationRequired
@@ -233,20 +229,12 @@ enum AuthNFCProductionWriteGate {
         return [0xE1, 0x10, sizeByte, 0x00]
     }
 
-    private static func authenticateWithStoredPassword(
-        tag: any AuthNFCTagCommanding,
-        passwordStore: AuthNFCPasswordStore
+    private static func authenticateWithTagManagerPassword(
+        tag: any AuthNFCTagCommanding
     ) async throws {
-        let hex: String
-        switch passwordStore.lookup() {
-        case .missing:
-            throw AuthNFCError.noStoredPassword
-        case .invalid:
-            throw AuthNFCError.invalidPasswordFormat
-        case .valid(let stored):
-            hex = stored
-        }
-        let password = try AuthNFCPasswordService.passwordBytes(fromHex: hex)
+        let password = try AuthNFCPasswordService.passwordBytes(
+            fromHex: AuthNFCConstants.tagManagerPasswordHex
+        )
         let pack = AuthNFCPasswordService.derivedPACK(fromPasswordBytes: password)
         do {
             try await AuthNFCTagService.authenticate(tag, password: password, expectedPACK: pack)

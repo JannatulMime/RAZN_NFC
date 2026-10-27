@@ -21,10 +21,10 @@ struct VersionCheckGateView<Content: View>: View {
                 versionCheckLoadingView
             case .failed(let message):
                 versionCheckFailedView(message: message)
-            case .updateRequired(let message, let url):
+            case .updateRequired(let message, _):
                 ForceUpdateView(
                     message: message,
-                    canOpenAppStore: url != nil,
+                    canOpenAppStore: true,
                     onUpdateNow: { viewModel.openAppStore() }
                 )
             case .allowed:
