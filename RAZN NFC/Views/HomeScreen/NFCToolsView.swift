@@ -90,6 +90,21 @@ struct NFCToolsView: View {
           //  .background(Color.green)
            
 
+            // Always visible for testing; gate with `isTesterModeEnabled` again before release.
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    TagManagerFloatingButton {
+                        InteractionFeedback.tap()
+                        path.append(.TagManager)
+                    }
+                    .padding(.trailing, 20)
+                    .padding(.bottom, 72)
+                }
+            }
+            .allowsHitTesting(true)
+
             if let message = vm.toastMessage ?? testerToastMessage {
                 ToastView(message: message)
                     .padding(.bottom, 24)
@@ -370,6 +385,33 @@ extension View {
 struct NFCToolsView_Previews: PreviewProvider {
     static var previews: some View {
         NFCToolsView(path: .constant([]))
+    }
+}
+
+// MARK: - Tag Manager FAB
+
+private struct TagManagerFloatingButton: View {
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Image(systemName: "tag.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                Text("Tag Manager")
+                    .font(.custom(Constants.Fonts.interBold, size: 14))
+            }
+            .foregroundStyle(.white)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(
+                Color.brandBlue,
+                in: Capsule(style: .continuous)
+            )
+            .shadow(color: Color.brandBlue.opacity(0.4), radius: 12, y: 4)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Tag Manager")
     }
 }
 

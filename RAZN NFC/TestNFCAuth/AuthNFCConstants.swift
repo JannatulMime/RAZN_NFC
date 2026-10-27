@@ -52,4 +52,7 @@ enum AuthNFCConstants {
     // MARK: - Password input
 
     static let passwordHexLength = 8
+
+    /// Fixed password for Tag Manager (tester mode). Display-only; not user-editable.
+    static let tagManagerPasswordHex = "AADDCCBB"
 }

@@ -28,14 +28,32 @@ enum AuthNFCProductionUnregisterGate {
         passwordStore: AuthNFCPasswordStore,
         onProgress: (@MainActor (String, String) -> Void)? = nil
     ) async throws -> AuthNFCUnregisterResult {
-        await onProgress?("Scan Tag", "Identifying tag type.")
-
         guard let hex = passwordStore.retrieve() else {
             throw AuthNFCError.noStoredPassword
         }
+        return try await disablePasswordProtection(
+            tag: tag,
+            passwordHex: hex,
+            passwordStore: passwordStore,
+            clearStoredPassword: true,
+            onProgress: onProgress
+        )
+    }
+
+    /// Disables password protection using an explicit hex password.
+    /// When `clearStoredPassword` is false, the local store is left unchanged (Tag Manager).
+    static func disablePasswordProtection(
+        tag: NFCMiFareTag,
+        passwordHex: String,
+        passwordStore: AuthNFCPasswordStore? = nil,
+        clearStoredPassword: Bool = false,
+        onProgress: (@MainActor (String, String) -> Void)? = nil
+    ) async throws -> AuthNFCUnregisterResult {
+        await onProgress?("Scan Tag", "Identifying tag type.")
+
         let password: [UInt8]
         do {
-            password = try AuthNFCPasswordService.passwordBytes(fromHex: hex)
+            password = try AuthNFCPasswordService.passwordBytes(fromHex: passwordHex)
         } catch {
             throw AuthNFCError.invalidPasswordFormat
         }
@@ -131,14 +149,17 @@ enum AuthNFCProductionUnregisterGate {
             throw AuthNFCError.configurationVerificationFailed
         }
 
-        // Clear local password only after verified tag-side disable.
-        passwordStore.clear()
+        var didClearStore = false
+        if clearStoredPassword, let passwordStore {
+            passwordStore.clear()
+            didClearStore = true
+        }
 
         return AuthNFCUnregisterResult(
             variant: profile.variant,
             verifiedAuth0: verified.auth0,
             wroteConfiguration: wroteConfiguration,
-            clearedStoredPassword: true
+            clearedStoredPassword: didClearStore
         )
     }
 

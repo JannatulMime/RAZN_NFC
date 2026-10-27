@@ -9,7 +9,7 @@ import SwiftUI
 
 
 enum Screens: Hashable {
-    case Home, Menu, AddField, AddUrl, AuthNFCDemo
+    case Home, Menu, AddField, AddUrl, AuthNFCDemo, TagManager
 }
 
 struct RootView: View {
@@ -25,6 +25,7 @@ struct RootView: View {
                     case .AddField: AddFieledView(path: $path)
                     case .AddUrl: AddURLFieldView(path: $path)
                     case .AuthNFCDemo: AuthNFCDemoView()
+                    case .TagManager: TagManagerView()
                     }
                 }
         }

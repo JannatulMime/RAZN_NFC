@@ -239,6 +239,42 @@ struct AuthNFCReadResult: Equatable {
     var contentFormat: AuthNFCContentFormat = .demoLengthPrefixed
 }
 
+/// Result of Tag Manager "Check Auth" against a fixed password.
+enum AuthNFCPasswordMatchStatus: Equatable {
+    /// Tag is not effectively password-protected; PWD_AUTH was not sent.
+    case skipped
+    /// Protected and PWD_AUTH + PACK succeeded with the supplied password.
+    case matched
+    /// Protected but PWD_AUTH failed or PACK mismatched.
+    case rejected
+}
+
+struct AuthNFCAuthCheckResult: Equatable {
+    var variant: AuthNFCTagVariant
+    var displayName: String
+    var auth0: UInt8
+    var isProtected: Bool
+    var isReadWriteProtection: Bool
+    var isConfigLocked: Bool
+    var passwordMatch: AuthNFCPasswordMatchStatus
+
+    var protectionModeLabel: String {
+        guard isProtected else { return "None" }
+        return isReadWriteProtection ? "Read & write" : "Write-only"
+    }
+
+    var authStatusTitle: String {
+        switch passwordMatch {
+        case .skipped:
+            return "Not protected"
+        case .matched:
+            return "Protected · Password matched"
+        case .rejected:
+            return "Protected · Password did not match"
+        }
+    }
+}
+
 enum AuthNFCContentFormat: String, Equatable {
     case demoLengthPrefixed
     case ndef

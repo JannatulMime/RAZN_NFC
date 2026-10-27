@@ -14,12 +14,123 @@ final class AuthNFCManager: NSObject, ObservableObject {
 
     @Published private(set) var isBusy = false
     @Published var status: AuthNFCStatusMessage = .idle
+    @Published private(set) var lastAuthCheck: AuthNFCAuthCheckResult?
 
     private var session: NFCTagReaderSession?
     private var tagContinuation: CheckedContinuation<NFCMiFareTag, Error>?
     private var didResumeTagContinuation = false
 
     // MARK: - Public API
+
+    /// Scans a tag, reports protection status, and tries PWD_AUTH with `passwordHex` when protected.
+    func checkAuthStatus(passwordHex: String) async {
+        guard !isBusy else {
+            status = .from(error: .operationInProgress)
+            return
+        }
+
+        do {
+            let password = try AuthNFCPasswordService.passwordBytes(fromHex: passwordHex)
+            let pack = AuthNFCPasswordService.derivedPACK(fromPasswordBytes: password)
+
+            isBusy = true
+            lastAuthCheck = nil
+            status = .progress(
+                "Ready to Scan",
+                message: "Hold a supported NTAG21x near the iPhone to check password protection."
+            )
+
+            let result = try await withConnectedMiFareTag(
+                alertMessage: "Hold a compatible NTAG213, NTAG215, or NTAG216 near the iPhone to check auth."
+            ) { tag in
+                try await self.performAuthCheck(tag: tag, password: password, pack: pack)
+            }
+
+            lastAuthCheck = result
+            status = .success(
+                "Auth Check Complete",
+                message: "\(result.displayName): \(result.authStatusTitle). AUTH0=0x\(String(result.auth0, radix: 16)), protection=\(result.protectionModeLabel), CFGLCK=\(result.isConfigLocked ? "1" : "0").",
+                nextStep: result.isProtected
+                    ? (result.passwordMatch == .matched
+                        ? "This tag matches the Tag Manager password."
+                        : "Protection is on, but this password did not authenticate.")
+                    : "Use Add Auth to enable password protection with the Tag Manager password."
+            )
+        } catch let error as AuthNFCError {
+            lastAuthCheck = nil
+            if error == .userCancelled {
+                status = .warning("Tag Removed or Session Cancelled", message: error.explanation, nextStep: error.suggestedNextStep)
+            } else {
+                status = .from(error: error)
+            }
+        } catch {
+            lastAuthCheck = nil
+            status = .from(error: AuthNFCError.fromNFCReaderError(error))
+        }
+
+        isBusy = false
+    }
+
+    /// Disables AUTH0-based protection using an explicit password. Does not clear the production store.
+    func removePasswordProtection(passwordHex: String) async {
+        guard !isBusy else {
+            status = .from(error: .operationInProgress)
+            return
+        }
+
+        do {
+            _ = try AuthNFCPasswordService.passwordBytes(fromHex: passwordHex)
+
+            isBusy = true
+            status = .progress(
+                "Ready to Scan",
+                message: "Hold the tag steady. Password protection will be removed after authentication."
+            )
+
+            let result = try await withConnectedMiFareTag(
+                alertMessage: "Hold the NTAG213/215/216 near the iPhone to remove password protection."
+            ) { tag in
+                try await AuthNFCProductionUnregisterGate.disablePasswordProtection(
+                    tag: tag,
+                    passwordHex: passwordHex,
+                    passwordStore: nil,
+                    clearStoredPassword: false,
+                    onProgress: { [weak self] title, message in
+                        self?.status = .progress(title, message: message)
+                    }
+                )
+            }
+
+            lastAuthCheck = AuthNFCAuthCheckResult(
+                variant: result.variant,
+                displayName: result.variant.displayName,
+                auth0: result.verifiedAuth0,
+                isProtected: false,
+                isReadWriteProtection: false,
+                isConfigLocked: false,
+                passwordMatch: .skipped
+            )
+
+            let wroteNote = result.wroteConfiguration
+                ? "AUTH0 was updated to 0xFF and verified."
+                : "AUTH0 was already 0xFF; no configuration write was required."
+            status = .success(
+                "Auth Removed",
+                message: "\(result.variant.displayName): password-based protection is disabled. \(wroteNote)",
+                nextStep: "You can write to this tag without PWD_AUTH, unless other lock bits remain."
+            )
+        } catch let error as AuthNFCError {
+            if error == .userCancelled {
+                status = .warning("Tag Removed or Session Cancelled", message: error.explanation, nextStep: error.suggestedNextStep)
+            } else {
+                status = .from(error: error)
+            }
+        } catch {
+            status = .from(error: AuthNFCError.fromNFCReaderError(error))
+        }
+
+        isBusy = false
+    }
 
     func registerPassword(
         passwordHex: String,
@@ -61,6 +172,16 @@ final class AuthNFCManager: NSObject, ObservableObject {
                     currentPassword: currentPassword
                 )
             }
+
+            lastAuthCheck = AuthNFCAuthCheckResult(
+                variant: result.variant,
+                displayName: result.variant.displayName,
+                auth0: result.verifiedAuth0,
+                isProtected: true,
+                isReadWriteProtection: !result.writeProtectionOnly,
+                isConfigLocked: false,
+                passwordMatch: .matched
+            )
 
             status = .success(
                 "Password Registered",
@@ -227,6 +348,7 @@ final class AuthNFCManager: NSObject, ObservableObject {
 
     func clearStatus() {
         status = .idle
+        lastAuthCheck = nil
     }
 
     // MARK: - Session
@@ -275,6 +397,64 @@ final class AuthNFCManager: NSObject, ObservableObject {
     }
 
     // MARK: - Operations
+
+    private func performAuthCheck(
+        tag: NFCMiFareTag,
+        password: [UInt8],
+        pack: [UInt8]
+    ) async throws -> AuthNFCAuthCheckResult {
+        status = .progress("Tag Detected", message: "Identifying NTAG variant via GET_VERSION.")
+        let (_, profile) = try await AuthNFCTagService.identifySupportedTag(tag)
+
+        status = .progress("Reading Configuration", message: "Reading AUTH0 and ACCESS.")
+
+        var didAuth = false
+        let snapshot: AuthNFCConfigSnapshot
+        do {
+            snapshot = try await AuthNFCTagService.readConfigSnapshot(tag, profile: profile)
+        } catch {
+            status = .progress("Authenticating", message: "Configuration pages are not readable; trying PWD_AUTH.")
+            do {
+                try await AuthNFCTagService.authenticate(tag, password: password, expectedPACK: pack)
+                didAuth = true
+            } catch AuthNFCError.packMismatch {
+                throw AuthNFCError.packMismatch
+            } catch AuthNFCError.authenticationRejected {
+                throw AuthNFCError.authenticationRejected
+            } catch {
+                throw AuthNFCError.authenticationRejected
+            }
+            status = .progress("Authentication Successful", message: "Re-reading configuration.")
+            snapshot = try await AuthNFCTagService.readConfigSnapshot(tag, profile: profile)
+        }
+
+        let isProtected = snapshot.isEffectivelyProtected(on: profile)
+        let passwordMatch: AuthNFCPasswordMatchStatus
+
+        if !isProtected {
+            passwordMatch = .skipped
+        } else if didAuth {
+            passwordMatch = .matched
+        } else {
+            status = .progress("Authenticating", message: "Protection is enabled. Verifying Tag Manager password.")
+            do {
+                try await AuthNFCTagService.authenticate(tag, password: password, expectedPACK: pack)
+                passwordMatch = .matched
+            } catch {
+                passwordMatch = .rejected
+            }
+        }
+
+        return AuthNFCAuthCheckResult(
+            variant: profile.variant,
+            displayName: profile.displayName,
+            auth0: snapshot.auth0,
+            isProtected: isProtected,
+            isReadWriteProtection: snapshot.isReadWriteProtection,
+            isConfigLocked: snapshot.isConfigLocked,
+            passwordMatch: passwordMatch
+        )
+    }
 
     private func performRegistration(
         tag: NFCMiFareTag,
