@@ -19,16 +19,15 @@ struct NFCToolsView: View {
     @Binding var path: [Screens]
     @StateObject private var vm = NFCViewModel()
     @State private var shareItems: ShareItems?
-    @State private var logoTapCount = 0
-    @State private var lastLogoTapTime: Date?
-    @State private var testerBadgeTapCount = 0
-    @State private var lastTesterBadgeTapTime: Date?
+    @State private var testerToggleTapCount = 0
+    /// Start of the current multi-tap attempt. All taps must land within `multiTapWindow` of this.
+    @State private var testerToggleWindowStart: Date?
     @State private var testerToastMessage: String?
     @State private var testerToastTask: Task<Void, Never>?
     @State private var isTesterModeEnabled = TesterModeManager.shared.isEnabled
 
-    private let multiTapThreshold = 5
-    private let multiTapWindow: TimeInterval = 10.0
+    private let multiTapThreshold = 10
+    private let multiTapWindow: TimeInterval = 5.0
     private let iconSize: CGFloat = 64
     private let gridSpacing: CGFloat = 30
     private var gridColumns: [GridItem] {
@@ -39,6 +38,7 @@ struct NFCToolsView: View {
         ZStack(alignment: .bottom) {
             Color.black
                 .ignoresSafeArea()
+                .onTapGesture { dismissKeyboard() }
 
             VStack(spacing: 0) {
                 header
@@ -71,35 +71,28 @@ struct NFCToolsView: View {
           //  .background(Color.green)
            
 
-            if isTesterModeEnabled {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        TagManagerFloatingButton {
-                            InteractionFeedback.tap()
-                            path.append(.TagManager)
-                        }
-                        .padding(.trailing, 20)
-                        .padding(.bottom, 72)
-                    }
-                }
-                .allowsHitTesting(true)
-                .transition(.opacity.combined(with: .scale(scale: 0.9)))
-            }
-
             if let message = vm.toastMessage ?? testerToastMessage {
                 ToastView(message: message)
                     .padding(.bottom, 24)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .allowsHitTesting(false)
+            }
+        }
+        // FAB must not sit in a full-screen ZStack layer — that steals taps from the
+        // TESTER badge (and other controls) after tester mode is enabled mid-session.
+        .overlay(alignment: .bottomTrailing) {
+            if isTesterModeEnabled {
+                TagManagerFloatingButton {
+                    InteractionFeedback.tap()
+                    path.append(.TagManager)
+                }
+                .padding(.trailing, 20)
+                .padding(.bottom, 72)
+                .transition(.opacity.combined(with: .scale(scale: 0.9)))
             }
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .keyboardLayoutLocked()
-        .contentShape(Rectangle())
-        .onTapGesture {
-            dismissKeyboard()
-        }
         .sheet(item: $vm.selectedSheet) { icon in
             EditLinkSheet(
                 icon: icon,
@@ -134,41 +127,34 @@ struct NFCToolsView: View {
         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 
-    private func handleLogoTap() {
-        guard !isTesterModeEnabled else { return }
-        guard registerMultiTap(count: &logoTapCount, lastTapTime: &lastLogoTapTime) else { return }
-        setTesterModeEnabled(true)
-    }
-
-    private func handleTesterBadgeTap() {
-        guard isTesterModeEnabled else { return }
-        guard registerMultiTap(count: &testerBadgeTapCount, lastTapTime: &lastTesterBadgeTapTime) else { return }
-        setTesterModeEnabled(false)
-    }
-
-    private func registerMultiTap(count: inout Int, lastTapTime: inout Date?) -> Bool {
+    /// 10 taps within 5 seconds (from the first tap) toggles tester mode on or off.
+    /// Used by both the logo and the TESTER badge so either control can deactivate.
+    private func handleTesterToggleTap() {
         let now = Date()
 
-        if let lastTap = lastTapTime, now.timeIntervalSince(lastTap) > multiTapWindow {
-            count = 0
+        // Count only while still inside the window that started on the first tap.
+        // If the window expired, start a fresh attempt from this tap.
+        if let windowStart = testerToggleWindowStart,
+           now.timeIntervalSince(windowStart) <= multiTapWindow {
+            testerToggleTapCount += 1
+        } else {
+            testerToggleWindowStart = now
+            testerToggleTapCount = 1
         }
 
-        count += 1
-        lastTapTime = now
+        InteractionFeedback.tap()
 
-        guard count >= multiTapThreshold else { return false }
+        guard testerToggleTapCount >= multiTapThreshold else { return }
 
-        count = 0
-        lastTapTime = nil
-        return true
+        testerToggleTapCount = 0
+        testerToggleWindowStart = nil
+        setTesterModeEnabled(!isTesterModeEnabled)
     }
 
     private func setTesterModeEnabled(_ enabled: Bool) {
         TesterModeManager.shared.setEnabled(enabled)
-        logoTapCount = 0
-        lastLogoTapTime = nil
-        testerBadgeTapCount = 0
-        lastTesterBadgeTapTime = nil
+        testerToggleTapCount = 0
+        testerToggleWindowStart = nil
 
         withAnimation(.spring(response: 0.4, dampingFraction: 0.78)) {
             isTesterModeEnabled = enabled
@@ -211,19 +197,25 @@ struct NFCToolsView: View {
             Spacer()
 
             HStack(spacing: 8) {
-                Image("razn_logo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 20)
-                    .opacity(0.7)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        handleLogoTap()
-                    }
+                Button(action: handleTesterToggleTap) {
+                    Image("razn_logo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 20)
+                        .opacity(0.7)
+                        .contentShape(Rectangle())
+                        // Larger hit target — logo alone is easy to miss while tapping quickly.
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 12)
+                }
+                .buttonStyle(.plain)
 
                 if isTesterModeEnabled {
-                    TesterModeBadge(onTap: handleTesterBadgeTap)
-                        .transition(.scale(scale: 0.85).combined(with: .opacity))
+                    Button(action: handleTesterToggleTap) {
+                        TesterModeBadgeLabel()
+                    }
+                    .buttonStyle(.plain)
+                    .transition(.scale(scale: 0.85).combined(with: .opacity))
                 }
             }
 
@@ -396,8 +388,7 @@ private struct TagManagerFloatingButton: View {
 
 // MARK: - Tester Mode Badge
 
-private struct TesterModeBadge: View {
-    let onTap: () -> Void
+private struct TesterModeBadgeLabel: View {
     @State private var glow = false
 
     var body: some View {
@@ -448,10 +439,10 @@ private struct TesterModeBadge: View {
                 }
                 .shadow(color: Color.brandBlue.opacity(0.25), radius: 8, y: 2)
         }
-        .contentShape(Capsule(style: .continuous))
-        .onTapGesture {
-            onTap()
-        }
+        // Generous hit target for fast multi-taps.
+        .padding(.horizontal, 6)
+        .padding(.vertical, 10)
+        .contentShape(Rectangle())
         .onAppear {
             withAnimation(.easeInOut(duration: 1.4).repeatForever(autoreverses: true)) {
                 glow = true
