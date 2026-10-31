@@ -42,9 +42,11 @@ enum AuthNFCProductionUnregisterGate {
 
     /// Disables password protection using an explicit hex password.
     /// When `clearStoredPassword` is false, the local store is left unchanged (Tag Manager).
+    /// Pass `expectedPACK` for NTAG215 HMAC-derived credentials; otherwise PACK is SHA256(pwd)[0..<2].
     static func disablePasswordProtection(
         tag: NFCMiFareTag,
         passwordHex: String,
+        expectedPACK: [UInt8]? = nil,
         passwordStore: AuthNFCPasswordStore? = nil,
         clearStoredPassword: Bool = false,
         onProgress: (@MainActor (String, String) -> Void)? = nil
@@ -57,7 +59,10 @@ enum AuthNFCProductionUnregisterGate {
         } catch {
             throw AuthNFCError.invalidPasswordFormat
         }
-        let pack = AuthNFCPasswordService.derivedPACK(fromPasswordBytes: password)
+        let pack = expectedPACK ?? AuthNFCPasswordService.derivedPACK(fromPasswordBytes: password)
+        guard pack.count == 2 else {
+            throw AuthNFCError.invalidPasswordFormat
+        }
 
         let (_, profile) = try await AuthNFCTagService.identifySupportedTag(tag)
         // Requirements focus on NTAG213/215; NTAG216 shares the same AUTH0 disable semantics

@@ -103,6 +103,16 @@ enum AuthNFCTagService {
         return Data(block.prefix(4))
     }
 
+    /// Reads the 7-byte NTAG UID from pages 0–1 (UID0…UID6). Does not use display strings.
+    static func readUID(_ tag: any AuthNFCTagCommanding) async throws -> [UInt8] {
+        let block = try await readPages(tag, startingAt: 0x00)
+        return try AuthNFCCredentialDerivation.uidBytes(fromPage0Read: block)
+    }
+
+    static func readUID(_ tag: NFCMiFareTag) async throws -> [UInt8] {
+        try await readUID(AuthNFCMiFareCommandBox(tag: tag))
+    }
+
     /// WRITE one 4-byte page. ACK is typically a single 0x0A byte on success.
     static func writePage(
         _ tag: any AuthNFCTagCommanding,

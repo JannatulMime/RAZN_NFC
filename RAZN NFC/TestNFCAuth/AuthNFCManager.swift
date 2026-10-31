@@ -22,7 +22,8 @@ final class AuthNFCManager: NSObject, ObservableObject {
 
     // MARK: - Public API
 
-    /// Scans a tag, reports protection status, and tries PWD_AUTH with `passwordHex` when protected.
+    /// Scans a tag, reports protection status, and tries PWD_AUTH with expected credentials when protected.
+    /// NTAG213/215 use UID-derived credentials; NTAG216 uses `passwordHex` (legacy shared password).
     func checkAuthStatus(passwordHex: String) async {
         guard !isBusy else {
             status = .from(error: .operationInProgress)
@@ -30,8 +31,8 @@ final class AuthNFCManager: NSObject, ObservableObject {
         }
 
         do {
-            let password = try AuthNFCPasswordService.passwordBytes(fromHex: passwordHex)
-            let pack = AuthNFCPasswordService.derivedPACK(fromPasswordBytes: password)
+            let legacyPassword = try AuthNFCPasswordService.passwordBytes(fromHex: passwordHex)
+            let legacyPACK = AuthNFCPasswordService.derivedPACK(fromPasswordBytes: legacyPassword)
 
             isBusy = true
             lastAuthCheck = nil
@@ -43,7 +44,11 @@ final class AuthNFCManager: NSObject, ObservableObject {
             let result = try await withConnectedMiFareTag(
                 alertMessage: "Hold a compatible NTAG213, NTAG215, or NTAG216 near the iPhone to check auth."
             ) { tag in
-                try await self.performAuthCheck(tag: tag, password: password, pack: pack)
+                try await self.performAuthCheck(
+                    tag: tag,
+                    legacyPassword: legacyPassword,
+                    legacyPACK: legacyPACK
+                )
             }
 
             lastAuthCheck = result
@@ -52,9 +57,9 @@ final class AuthNFCManager: NSObject, ObservableObject {
                 message: "\(result.displayName): \(result.authStatusTitle). AUTH0=0x\(String(result.auth0, radix: 16)), protection=\(result.protectionModeLabel), CFGLCK=\(result.isConfigLocked ? "1" : "0").",
                 nextStep: result.isProtected
                     ? (result.passwordMatch == .matched
-                        ? "This tag matches the Tag Manager password."
-                        : "Protection is on, but this password did not authenticate.")
-                    : "Use Add Auth to enable password protection with the Tag Manager password."
+                        ? "This tag matches the expected credentials."
+                        : "Protection is on, but expected credentials did not authenticate.")
+                    : "Use Add Auth to enable password protection."
             )
         } catch let error as AuthNFCError {
             lastAuthCheck = nil
@@ -71,7 +76,7 @@ final class AuthNFCManager: NSObject, ObservableObject {
         isBusy = false
     }
 
-    /// Disables AUTH0-based protection using an explicit password. Does not clear the production store.
+    /// Disables AUTH0-based protection. Tries NTAG215 derived credentials, then `passwordHex`, then fails.
     func removePasswordProtection(passwordHex: String) async {
         guard !isBusy else {
             status = .from(error: .operationInProgress)
@@ -90,15 +95,7 @@ final class AuthNFCManager: NSObject, ObservableObject {
             let result = try await withConnectedMiFareTag(
                 alertMessage: "Hold the NTAG213/215/216 near the iPhone to remove password protection."
             ) { tag in
-                try await AuthNFCProductionUnregisterGate.disablePasswordProtection(
-                    tag: tag,
-                    passwordHex: passwordHex,
-                    passwordStore: nil,
-                    clearStoredPassword: false,
-                    onProgress: { [weak self] title, message in
-                        self?.status = .progress(title, message: message)
-                    }
-                )
+                try await self.performRemoveAuth(tag: tag, fallbackPasswordHex: passwordHex)
             }
 
             lastAuthCheck = AuthNFCAuthCheckResult(
@@ -132,11 +129,44 @@ final class AuthNFCManager: NSObject, ObservableObject {
         isBusy = false
     }
 
-    func registerPassword(
-        passwordHex: String,
-        confirmationHex: String,
+    private func performRemoveAuth(
+        tag: NFCMiFareTag,
+        fallbackPasswordHex: String
+    ) async throws -> AuthNFCUnregisterResult {
+        let (_, profile) = try await AuthNFCTagService.identifySupportedTag(tag)
+        var candidates: [(hex: String, pack: [UInt8]?)] = []
+        if Self.usesUIDDerivedCredentials(profile.variant) {
+            let uid = try await AuthNFCTagService.readUID(tag)
+            let derived = try AuthNFCCredentialDerivation.deriveCredentials(uid: uid)
+            candidates.append((derived.passwordHex, derived.pack))
+        }
+        candidates.append((fallbackPasswordHex, nil))
+
+        var lastError: Error = AuthNFCError.authenticationRejected
+        for candidate in candidates {
+            do {
+                return try await AuthNFCProductionUnregisterGate.disablePasswordProtection(
+                    tag: tag,
+                    passwordHex: candidate.hex,
+                    expectedPACK: candidate.pack,
+                    passwordStore: nil,
+                    clearStoredPassword: false,
+                    onProgress: { [weak self] title, message in
+                        self?.status = .progress(title, message: message)
+                    }
+                )
+            } catch {
+                lastError = error
+            }
+        }
+        throw lastError
+    }
+
+    /// Provisions password protection. NTAG213/215 use UID-derived PWD/PACK; NTAG216 uses the legacy shared hex.
+    func registerTagAuth(
         allowOverwrite: Bool,
-        currentPasswordHex: String?
+        legacyPasswordHex: String = AuthNFCConstants.tagManagerPasswordHex,
+        currentPasswordHex: String? = nil
     ) async {
         guard !isBusy else {
             status = .from(error: .operationInProgress)
@@ -144,11 +174,8 @@ final class AuthNFCManager: NSObject, ObservableObject {
         }
 
         do {
-            let newPassword = try AuthNFCPasswordService.validateMatchingPasswords(
-                password: passwordHex,
-                confirmation: confirmationHex
-            )
-            let newPACK = AuthNFCPasswordService.derivedPACK(fromPasswordBytes: newPassword)
+            let legacyPassword = try AuthNFCPasswordService.passwordBytes(fromHex: legacyPasswordHex)
+            let legacyPACK = AuthNFCPasswordService.derivedPACK(fromPasswordBytes: legacyPassword)
 
             var currentPassword: [UInt8]?
             if let currentPasswordHex, !currentPasswordHex.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -158,17 +185,17 @@ final class AuthNFCManager: NSObject, ObservableObject {
             isBusy = true
             status = .progress(
                 "Ready to Scan",
-                message: "Registering password on a supported NTAG21x. Keep the tag still."
+                message: "Registering password protection on a supported NTAG21x. Keep the tag still."
             )
 
             let result = try await withConnectedMiFareTag(
-                alertMessage: "Hold a compatible NTAG213, NTAG215, or NTAG216 near the iPhone to register the password."
+                alertMessage: "Hold a compatible NTAG213, NTAG215, or NTAG216 near the iPhone to register auth."
             ) { tag in
                 try await self.performRegistration(
                     tag: tag,
-                    newPassword: newPassword,
-                    newPACK: newPACK,
                     allowOverwrite: allowOverwrite,
+                    legacyPassword: legacyPassword,
+                    legacyPACK: legacyPACK,
                     currentPassword: currentPassword
                 )
             }
@@ -183,10 +210,16 @@ final class AuthNFCManager: NSObject, ObservableObject {
                 passwordMatch: .matched
             )
 
+            let usesDerived = Self.usesUIDDerivedCredentials(result.variant)
+            let credentialNote = usesDerived
+                ? "\(result.variant.displayName) credentials were derived from the tag UID and the app master key."
+                : "Legacy shared Tag Manager password was written."
             status = .success(
                 "Password Registered",
-                message: "\(result.variant.displayName) configured. AUTH0 is 0x\(String(result.verifiedAuth0, radix: 16)) with write-only protection. PACK was verified via PWD_AUTH. Configuration lock bits were not set.",
-                nextStep: "Use Authenticate & Write with the same 8-character hex password, or Read Tag (No Authentication) to inspect accessible memory."
+                message: "\(result.variant.displayName) configured. AUTH0 is 0x\(String(result.verifiedAuth0, radix: 16)) with write-only protection. PACK was verified via PWD_AUTH. \(credentialNote) Configuration lock bits were not set.",
+                nextStep: usesDerived
+                    ? "Use production Write, or Test Auth to preview the derived password. Existing cards that used the old shared password must be re-provisioned with Add Auth."
+                    : "Use Check Auth with the Tag Manager password."
             )
         } catch let error as AuthNFCError {
             if error == .userCancelled {
@@ -199,6 +232,65 @@ final class AuthNFCManager: NSObject, ObservableObject {
         }
 
         isBusy = false
+    }
+
+    /// Reads UID and derives credentials for Test Auth. Does not send PWD_AUTH or write.
+    func previewDerivedCredentials() async -> AuthNFCDerivedCredentials? {
+        guard !isBusy else {
+            status = .from(error: .operationInProgress)
+            return nil
+        }
+
+        do {
+            isBusy = true
+            status = .progress(
+                "Ready to Scan",
+                message: "Hold an NTAG213 or NTAG215 near the iPhone. Credentials are derived locally; the tag is not authenticated."
+            )
+
+            let credentials = try await withConnectedMiFareTag(
+                alertMessage: "Hold an NTAG213 or NTAG215 near the iPhone to preview derived credentials."
+            ) { tag in
+                try await self.performCredentialPreview(tag: tag)
+            }
+
+            status = .success(
+                "Credentials Derived",
+                message: "UID \(credentials.uidDisplayHex). Password and master key are shown on this tester screen only. PWD_AUTH was not sent.",
+                nextStep: "Use Add Auth on Tag Manager to write these credentials to the tag if needed."
+            )
+            isBusy = false
+            return credentials
+        } catch let error as AuthNFCError {
+            if error == .userCancelled {
+                status = .warning("Tag Removed or Session Cancelled", message: error.explanation, nextStep: error.suggestedNextStep)
+            } else {
+                status = .from(error: error)
+            }
+        } catch {
+            status = .from(error: AuthNFCError.fromNFCReaderError(error))
+        }
+
+        isBusy = false
+        return nil
+    }
+
+    func registerPassword(
+        passwordHex: String,
+        confirmationHex: String,
+        allowOverwrite: Bool,
+        currentPasswordHex: String?
+    ) async {
+        // Legacy entry point kept for callers that still pass hex; Tag Manager uses registerTagAuth.
+        _ = try? AuthNFCPasswordService.validateMatchingPasswords(
+            password: passwordHex,
+            confirmation: confirmationHex
+        )
+        await registerTagAuth(
+            allowOverwrite: allowOverwrite,
+            legacyPasswordHex: passwordHex,
+            currentPasswordHex: currentPasswordHex
+        )
     }
 
     /// Writes demo content. Authenticates with PWD_AUTH only when the destination pages require it.
@@ -400,11 +492,17 @@ final class AuthNFCManager: NSObject, ObservableObject {
 
     private func performAuthCheck(
         tag: NFCMiFareTag,
-        password: [UInt8],
-        pack: [UInt8]
+        legacyPassword: [UInt8],
+        legacyPACK: [UInt8]
     ) async throws -> AuthNFCAuthCheckResult {
         status = .progress("Tag Detected", message: "Identifying NTAG variant via GET_VERSION.")
         let (_, profile) = try await AuthNFCTagService.identifySupportedTag(tag)
+        let expected = try await expectedCredentials(
+            tag: tag,
+            profile: profile,
+            legacyPassword: legacyPassword,
+            legacyPACK: legacyPACK
+        )
 
         status = .progress("Reading Configuration", message: "Reading AUTH0 and ACCESS.")
 
@@ -415,7 +513,11 @@ final class AuthNFCManager: NSObject, ObservableObject {
         } catch {
             status = .progress("Authenticating", message: "Configuration pages are not readable; trying PWD_AUTH.")
             do {
-                try await AuthNFCTagService.authenticate(tag, password: password, expectedPACK: pack)
+                try await AuthNFCTagService.authenticate(
+                    tag,
+                    password: expected.password,
+                    expectedPACK: expected.pack
+                )
                 didAuth = true
             } catch AuthNFCError.packMismatch {
                 throw AuthNFCError.packMismatch
@@ -436,9 +538,13 @@ final class AuthNFCManager: NSObject, ObservableObject {
         } else if didAuth {
             passwordMatch = .matched
         } else {
-            status = .progress("Authenticating", message: "Protection is enabled. Verifying Tag Manager password.")
+            status = .progress("Authenticating", message: "Protection is enabled. Verifying expected credentials.")
             do {
-                try await AuthNFCTagService.authenticate(tag, password: password, expectedPACK: pack)
+                try await AuthNFCTagService.authenticate(
+                    tag,
+                    password: expected.password,
+                    expectedPACK: expected.pack
+                )
                 passwordMatch = .matched
             } catch {
                 passwordMatch = .rejected
@@ -456,11 +562,27 @@ final class AuthNFCManager: NSObject, ObservableObject {
         )
     }
 
+    private func performCredentialPreview(tag: NFCMiFareTag) async throws -> AuthNFCDerivedCredentials {
+        status = .progress("Tag Detected", message: "Identifying tag. No authentication will be sent.")
+        let (_, profile) = try await AuthNFCTagService.identifySupportedTag(tag)
+        guard Self.usesUIDDerivedCredentials(profile.variant) else {
+            throw AuthNFCError.unsupportedTagType(
+                details: "Test Auth previews UID-derived credentials for NTAG213 and NTAG215 only (got \(profile.displayName))."
+            )
+        }
+        let uid = try await AuthNFCTagService.readUID(tag)
+        return try AuthNFCCredentialDerivation.deriveCredentials(uid: uid)
+    }
+
+    static func usesUIDDerivedCredentials(_ variant: AuthNFCTagVariant) -> Bool {
+        variant == .ntag213 || variant == .ntag215
+    }
+
     private func performRegistration(
         tag: NFCMiFareTag,
-        newPassword: [UInt8],
-        newPACK: [UInt8],
         allowOverwrite: Bool,
+        legacyPassword: [UInt8],
+        legacyPACK: [UInt8],
         currentPassword: [UInt8]?
     ) async throws -> AuthNFCRegisterResult {
         status = .progress("Tag Detected", message: "Identifying NTAG variant via GET_VERSION.")
@@ -471,20 +593,28 @@ final class AuthNFCManager: NSObject, ObservableObject {
             throw AuthNFCError.configurationPermanentlyLocked
         }
 
+        let newCredentials = try await expectedCredentials(
+            tag: tag,
+            profile: profile,
+            legacyPassword: legacyPassword,
+            legacyPACK: legacyPACK
+        )
+        let newPassword = newCredentials.password
+        let newPACK = newCredentials.pack
+
         if snapshot.isEffectivelyProtected(on: profile) {
             guard allowOverwrite else {
                 throw AuthNFCError.existingProtectionRequiresConfirmation
             }
-            guard let currentPassword else {
-                throw AuthNFCError.existingProtectionRequiresConfirmation
-            }
-            let currentPACK = AuthNFCPasswordService.derivedPACK(fromPasswordBytes: currentPassword)
-            do {
-                try await AuthNFCTagService.authenticate(tag, password: currentPassword, expectedPACK: currentPACK)
-            } catch is AuthNFCError {
-                // Do not guess unknown PACK values from other tools.
-                throw AuthNFCError.authenticationRejected
-            }
+            try await authenticateForOverwrite(
+                tag: tag,
+                profile: profile,
+                derivedPassword: newPassword,
+                derivedPACK: newPACK,
+                legacyPassword: legacyPassword,
+                legacyPACK: legacyPACK,
+                currentPassword: currentPassword
+            )
         }
 
         // Write PWD, PACK, then ACCESS (write-only, CFGLCK=0), then AUTH0=user start.
@@ -533,6 +663,61 @@ final class AuthNFCManager: NSObject, ObservableObject {
             verifiedAuth0: verified.auth0,
             writeProtectionOnly: !verified.isReadWriteProtection
         )
+    }
+
+    private func expectedCredentials(
+        tag: NFCMiFareTag,
+        profile: AuthNFCTagProfile,
+        legacyPassword: [UInt8],
+        legacyPACK: [UInt8]
+    ) async throws -> (password: [UInt8], pack: [UInt8]) {
+        if Self.usesUIDDerivedCredentials(profile.variant) {
+            let uid = try await AuthNFCTagService.readUID(tag)
+            let derived = try AuthNFCCredentialDerivation.deriveCredentials(uid: uid)
+            return (derived.password, derived.pack)
+        }
+        return (legacyPassword, legacyPACK)
+    }
+
+    /// Tries derived credentials, then legacy shared password, then an explicit current password.
+    private func authenticateForOverwrite(
+        tag: NFCMiFareTag,
+        profile: AuthNFCTagProfile,
+        derivedPassword: [UInt8],
+        derivedPACK: [UInt8],
+        legacyPassword: [UInt8],
+        legacyPACK: [UInt8],
+        currentPassword: [UInt8]?
+    ) async throws {
+        var candidates: [(password: [UInt8], pack: [UInt8])] = []
+        if Self.usesUIDDerivedCredentials(profile.variant) {
+            candidates.append((derivedPassword, derivedPACK))
+            candidates.append((legacyPassword, legacyPACK))
+        } else {
+            candidates.append((legacyPassword, legacyPACK))
+        }
+        if let currentPassword {
+            let currentPACK = AuthNFCPasswordService.derivedPACK(fromPasswordBytes: currentPassword)
+            if !candidates.contains(where: { $0.password == currentPassword && $0.pack == currentPACK }) {
+                candidates.append((currentPassword, currentPACK))
+            }
+        }
+
+        for candidate in candidates {
+            do {
+                try await AuthNFCTagService.authenticate(
+                    tag,
+                    password: candidate.password,
+                    expectedPACK: candidate.pack
+                )
+                return
+            } catch AuthNFCError.authenticationRejected, AuthNFCError.packMismatch {
+                continue
+            } catch AuthNFCError.unexpectedResponse {
+                continue
+            }
+        }
+        throw AuthNFCError.authenticationRejected
     }
 
     private func performAuthenticatedWrite(

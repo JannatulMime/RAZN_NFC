@@ -1,0 +1,6 @@
+// App target base configuration.
+// Optional Secrets.xcconfig overrides RAZN_NFC_MASTER_KEY_HEX for local/CI builds.
+
+RAZN_NFC_MASTER_KEY_HEX =
+
+#include? "Secrets.xcconfig"

@@ -6,7 +6,7 @@
 //
 //  Still needs a physical tag:
 //  1. Unprotected NTAG213 and NTAG215 show "Unprotected Tag" and do not write.
-//  2. NTAG213/215 with AUTH0 at or before page 04h and the Tag Manager password writes.
+//  2. NTAG213/215 with AUTH0 at or before page 04h and UID-derived credentials write.
 //  3. The same tag with a different password shows "Wrong Tag" and does not write.
 //  4. PROT=1 tags whose CFG pages NAK before PWD_AUTH are rejected as unreadable, not written.
 //  5. Production Read still completes with no password.
@@ -19,6 +19,27 @@ import XCTest
 final class AuthNFCProductionWriteGateTests: XCTestCase {
 
     private let passwordHex = AuthNFCConstants.tagManagerPasswordHex
+    private let testUID: [UInt8] = [0x04, 0xDE, 0xAD, 0xBE, 0xEF, 0x01, 0x02]
+    private let masterKeyProvider = FixedAuthNFCMasterKeyProvider(
+        hex: AuthNFCMasterKeyProvider.testOnlyMasterKeyHex
+    )
+
+    override func setUp() {
+        super.setUp()
+        AuthNFCMasterKeyProvider.shared = masterKeyProvider
+    }
+
+    override func tearDown() {
+        AuthNFCMasterKeyProvider.shared = BundleAuthNFCMasterKeyProvider()
+        super.tearDown()
+    }
+
+    private func derivedCredentials() throws -> AuthNFCDerivedCredentials {
+        try AuthNFCCredentialDerivation.deriveCredentials(
+            uid: testUID,
+            masterKeyProvider: masterKeyProvider
+        )
+    }
 
     func testUnprotectedNTAG213IsRejectedWithNoWrite() async throws {
         let tag = makeTag(profile: .ntag213, auth0: 0xFF, access: 0x00)
@@ -90,13 +111,21 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
     }
 
     func testProtectedTagWithCorrectPasswordAuthenticatesThenWrites() async throws {
-        let password = try AuthNFCPasswordService.passwordBytes(fromHex: passwordHex)
+        let credentials = try derivedCredentials()
         let profile = AuthNFCTagProfile.ntag213
-        let tag = makeTag(profile: profile, auth0: 0x04, access: 0x00, acceptedPassword: password)
+        let tag = makeTag(
+            profile: profile,
+            auth0: 0x04,
+            access: 0x00,
+            acceptedPassword: credentials.password,
+            packResponse: credentials.pack,
+            uid: testUID
+        )
 
         let prep = try await AuthNFCProductionWriteGate.prepareAuthenticatedWrite(
             tag: tag,
-            ndefMessage: sampleMessage()
+            ndefMessage: sampleMessage(),
+            masterKeyProvider: masterKeyProvider
         )
         XCTAssertTrue(prep.authenticated)
         XCTAssertEqual(prep.profile, profile)
@@ -113,15 +142,24 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
     }
 
     func testProtectedNTAG215WithReadAndWriteProtStillRequiresAuthBeforeWrite() async throws {
-        let password = try AuthNFCPasswordService.passwordBytes(fromHex: passwordHex)
+        let credentials = try derivedCredentials()
         let profile = AuthNFCTagProfile.ntag215
-        let tag = makeTag(profile: profile, auth0: 0x04, access: 0x80, acceptedPassword: password)
+        let tag = makeTag(
+            profile: profile,
+            auth0: 0x04,
+            access: 0x80,
+            acceptedPassword: credentials.password,
+            packResponse: credentials.pack,
+            uid: testUID
+        )
         try await AuthNFCProductionWriteGate.writeProtectedNDEF(
             tag: tag,
-            message: sampleMessage()
+            message: sampleMessage(),
+            masterKeyProvider: masterKeyProvider
         )
         assertWritesFollowAuthentication(on: tag, profile: profile)
         XCTAssertTrue(tag.commands.contains(Data([AuthNFCConstants.cmdRead, profile.cfg0Page])))
+        XCTAssertTrue(tag.commands.contains(Data([AuthNFCConstants.cmdRead, 0x00])))
     }
 
     func testProtectedTagWithWrongPasswordDoesNotWrite() async throws {
@@ -129,7 +167,8 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
             profile: .ntag215,
             auth0: 0x04,
             access: 0x00,
-            acceptedPassword: [0xFF, 0xFF, 0xFF, 0xFF]
+            acceptedPassword: [0xFF, 0xFF, 0xFF, 0xFF],
+            uid: testUID
         )
         try await expectRejection(tag, .authenticationRejected)
         XCTAssertTrue(tag.didAuthenticate)
@@ -137,20 +176,35 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
         XCTAssertEqual(alert.title, "Wrong Tag")
         XCTAssertEqual(
             alert.message,
-            "Authentication failed. This tag does not match the password configured in this app. Writing is not allowed."
+            "Authentication failed. This tag does not match the expected credentials. Writing is not allowed."
         )
     }
 
+    func testNTAG215PackMismatchDoesNotWrite() async throws {
+        let credentials = try derivedCredentials()
+        let wrongPACK: [UInt8] = credentials.pack == [0x00, 0x00] ? [0xFF, 0xFF] : [0x00, 0x00]
+        let tag = makeTag(
+            profile: .ntag215,
+            auth0: 0x04,
+            access: 0x00,
+            acceptedPassword: credentials.password,
+            packResponse: wrongPACK,
+            uid: testUID
+        )
+        try await expectRejection(tag, .packMismatch)
+        XCTAssertEqual(AuthNFCProductionWriteAlert.presented(for: AuthNFCError.packMismatch)?.title, "Wrong Tag")
+    }
+
     func testPackMismatchIsWrongTagAndDoesNotWrite() async throws {
-        let password = try AuthNFCPasswordService.passwordBytes(fromHex: passwordHex)
-        let derived = AuthNFCPasswordService.derivedPACK(fromPasswordBytes: password)
-        let wrongPACK: [UInt8] = derived == [0x00, 0x00] ? [0xFF, 0xFF] : [0x00, 0x00]
+        let credentials = try derivedCredentials()
+        let wrongPACK: [UInt8] = credentials.pack == [0x00, 0x00] ? [0xFF, 0xFF] : [0x00, 0x00]
         let tag = makeTag(
             profile: .ntag213,
-            auth0: 0x00,
+            auth0: 0x04,
             access: 0x00,
-            acceptedPassword: password,
-            packResponse: wrongPACK
+            acceptedPassword: credentials.password,
+            packResponse: wrongPACK,
+            uid: testUID
         )
         try await expectRejection(tag, .packMismatch)
         XCTAssertEqual(AuthNFCProductionWriteAlert.presented(for: AuthNFCError.packMismatch)?.title, "Wrong Tag")
@@ -163,8 +217,34 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
     }
 
     func testDestinationNotFullyCoveredByAuth0IsRejected() async throws {
-        let tag = makeTag(profile: .ntag215, auth0: 0x20, access: 0x00)
+        let tag = makeTag(profile: .ntag215, auth0: 0x20, access: 0x00, uid: testUID)
         try await expectRejection(tag, .unprotectedTag)
+        XCTAssertFalse(tag.didAuthenticate)
+    }
+
+    func testMissingMasterKeyRejectsNTAG215WithoutWriting() async throws {
+        let credentials = try derivedCredentials()
+        let tag = makeTag(
+            profile: .ntag215,
+            auth0: 0x04,
+            acceptedPassword: credentials.password,
+            packResponse: credentials.pack,
+            uid: testUID
+        )
+        do {
+            try await AuthNFCProductionWriteGate.writeProtectedNDEF(
+                tag: tag,
+                message: sampleMessage(),
+                masterKeyProvider: FixedAuthNFCMasterKeyProvider(hex: "")
+            )
+            XCTFail("Expected missing/invalid master key")
+        } catch let error as AuthNFCError {
+            XCTAssertTrue(
+                error == .missingMasterKey || error == .invalidMasterKey,
+                "Got \(error)"
+            )
+        }
+        XCTAssertTrue(tag.writeCommands.isEmpty)
         XCTAssertFalse(tag.didAuthenticate)
     }
 
@@ -316,7 +396,8 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
         do {
             try await AuthNFCProductionWriteGate.writeProtectedNDEF(
                 tag: tag,
-                message: sampleMessage()
+                message: sampleMessage(),
+                masterKeyProvider: masterKeyProvider
             )
             XCTFail("Expected \(expected)", file: file, line: line)
         } catch let error as AuthNFCError {
@@ -367,9 +448,11 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
         packResponse: [UInt8]? = nil,
         configReadError: Error? = nil,
         family: NFCMiFareFamily = .ultralight,
-        storageSize: UInt8? = nil
+        storageSize: UInt8? = nil,
+        uid: [UInt8] = [0x04, 0xDE, 0xAD, 0xBE, 0xEF, 0x01, 0x02]
     ) -> ScriptedAuthNFCTag {
         let storage = storageSize ?? profile.storageSizeByte
+        precondition(uid.count == 7)
         return ScriptedAuthNFCTag(mifareFamily: family) { command in
             guard let op = command.first else {
                 throw AuthNFCError.unexpectedResponse(details: "empty command")
@@ -382,6 +465,18 @@ final class AuthNFCProductionWriteGateTests: XCTestCase {
                     throw AuthNFCError.unexpectedResponse(details: "short READ")
                 }
                 let page = command[1]
+                if page == 0x00 {
+                    var block = Data(repeating: 0, count: 16)
+                    block[0] = uid[0]
+                    block[1] = uid[1]
+                    block[2] = uid[2]
+                    block[3] = 0x00 // BCC0 placeholder
+                    block[4] = uid[3]
+                    block[5] = uid[4]
+                    block[6] = uid[5]
+                    block[7] = uid[6]
+                    return block
+                }
                 if page == profile.cfg0Page {
                     if let configReadError {
                         throw configReadError

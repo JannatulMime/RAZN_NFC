@@ -24,6 +24,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		A1B2C3D42E5A000100000001 /* Config/RAZN-NFC.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "Config/RAZN-NFC.xcconfig"; sourceTree = "<group>"; };
 		F32C47B42E44E9B200869305 /* RAZN NFC.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "RAZN NFC.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F32C47EE2E44E9B400869305 /* RAZN NFCTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "RAZN NFCTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -66,6 +67,7 @@
 		F32C47AB2E44E9B200869305 = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3D42E5A000100000001 /* Config/RAZN-NFC.xcconfig */,
 				F32C47B62E44E9B200869305 /* RAZN NFC */,
 				F32C47EF2E44E9B400869305 /* RAZN NFCTests */,
 				F32C47B52E44E9B200869305 /* Products */,
@@ -335,12 +337,13 @@
 		};
 		F32C47C32E44E9B300869305 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A1B2C3D42E5A000100000001 /* Config/RAZN-NFC.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "RAZN NFC/RAZN NFC.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 30;
 				DEVELOPMENT_ASSET_PATHS = "\"RAZN NFC/Preview Content\"";
 				DEVELOPMENT_TEAM = H552WM8224;
 				ENABLE_PREVIEWS = YES;
@@ -373,12 +376,13 @@
 		};
 		F32C47C42E44E9B300869305 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = A1B2C3D42E5A000100000001 /* Config/RAZN-NFC.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "RAZN NFC/RAZN NFC.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 30;
 				DEVELOPMENT_ASSET_PATHS = "\"RAZN NFC/Preview Content\"";
 				DEVELOPMENT_TEAM = H552WM8224;
 				ENABLE_PREVIEWS = YES;

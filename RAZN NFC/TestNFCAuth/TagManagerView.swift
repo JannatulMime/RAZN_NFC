@@ -2,8 +2,8 @@
 //  TagManagerView.swift
 //  RAZN NFC
 //
-//  Tester-mode hub for checking, adding, and removing NTAG21x password protection
-//  with the fixed Tag Manager password (AuthNFCConstants.tagManagerPasswordHex).
+//  Tester-mode hub for checking, adding, and removing NTAG21x password protection.
+//  NTAG213/215 use UID + master-key HMAC credentials; NTAG216 uses the legacy shared password.
 //
 
 import SwiftUI
@@ -26,7 +26,7 @@ struct TagManagerView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     header
-                    passwordLabel
+                    credentialSummary
                     actionButtons
                     if let check = manager.lastAuthCheck {
                         TagAuthDetailsCard(result: check)
@@ -49,16 +49,15 @@ struct TagManagerView: View {
             Button("Cancel", role: .cancel) {}
             Button("Overwrite", role: .destructive) {
                 Task {
-                    await manager.registerPassword(
-                        passwordHex: passwordHex,
-                        confirmationHex: passwordHex,
+                    await manager.registerTagAuth(
                         allowOverwrite: true,
+                        legacyPasswordHex: passwordHex,
                         currentPasswordHex: passwordHex
                     )
                 }
             }
         } message: {
-            Text("This tag already has password protection. Overwrite it using the Tag Manager password (\(passwordHex))? The current password must also be \(passwordHex).")
+            Text("This tag already has password protection. Overwrite it? For NTAG213/215, the app tries UID-derived credentials, then the legacy shared password (\(passwordHex)).")
         }
         .alert("Remove Auth?", isPresented: $showRemoveAlert) {
             Button("Cancel", role: .cancel) {}
@@ -68,7 +67,7 @@ struct TagManagerView: View {
                 }
             }
         } message: {
-            Text("This disables password protection on the tag (AUTH0 → 0xFF) after authenticating with \(passwordHex). Tag content is not erased.")
+            Text("This disables password protection on the tag (AUTH0 → 0xFF). Tag content is not erased. NTAG213/215 try derived credentials first, then the legacy shared password.")
         }
         .alert("Password Required", isPresented: $showRemovePasswordPrompt) {
             TextField("8 hex characters", text: $removePasswordInput)
@@ -85,7 +84,7 @@ struct TagManagerView: View {
                 }
             }
         } message: {
-            Text("The Tag Manager password did not match this tag. Enter the tag’s current 8-character hex password to remove auth.")
+            Text("Automatic credentials did not match this tag. Enter the tag’s current 8-character hex password to remove auth.")
         }
         .onChange(of: manager.status) { newStatus in
             if newStatus.kind == .error,
@@ -124,30 +123,35 @@ struct TagManagerView: View {
                 .foregroundStyle(.white)
                 .accessibilityAddTraits(.isHeader)
 
-            Text("Check, add, or remove NTAG21x password protection using the shared Tag Manager password. Supported tags: NTAG213, NTAG215, and NTAG216.")
+            Text("Check, add, or remove NTAG21x password protection. NTAG213 and NTAG215 use offline UID + master-key credentials. NTAG216 still uses the legacy shared password.")
                 .font(.custom(Constants.Fonts.interRegular, size: 15))
                 .foregroundStyle(.white.opacity(0.7))
         }
     }
 
-    private var passwordLabel: some View {
+    private var credentialSummary: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Password")
+            Text("Credentials")
                 .font(.custom(Constants.Fonts.interRegular, size: 12))
                 .foregroundStyle(.white.opacity(0.5))
 
-            HStack(spacing: 10) {
-                Image(systemName: "lock.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(Color.brandBlue)
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 10) {
+                    Image(systemName: "lock.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(Color.brandBlue)
 
-                Text(passwordHex)
-                    .font(.custom(Constants.Fonts.interBold, size: 17))
-                    .foregroundStyle(.white)
-                    .tracking(1.5)
+                    Text("NTAG213/215: UID + master key (HMAC)")
+                        .font(.custom(Constants.Fonts.interBold, size: 15))
+                        .foregroundStyle(.white)
+
+                    Spacer(minLength: 0)
+                }
+
+                Text("Legacy NTAG216 / migration password: \(passwordHex)")
+                    .font(.custom(Constants.Fonts.interRegular, size: 13))
+                    .foregroundStyle(.white.opacity(0.65))
                     .textSelection(.enabled)
-
-                Spacer(minLength: 0)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 14)
@@ -155,7 +159,7 @@ struct TagManagerView: View {
                 Color.white.opacity(0.08),
                 in: RoundedRectangle(cornerRadius: 12, style: .continuous)
             )
-            .accessibilityLabel("Password \(passwordHex)")
+            .accessibilityLabel("NTAG213 and NTAG215 use UID derived credentials. Legacy password \(passwordHex)")
         }
     }
 
@@ -179,14 +183,34 @@ struct TagManagerView: View {
             ) {
                 InteractionFeedback.tap()
                 Task {
-                    await manager.registerPassword(
-                        passwordHex: passwordHex,
-                        confirmationHex: passwordHex,
+                    await manager.registerTagAuth(
                         allowOverwrite: false,
+                        legacyPasswordHex: passwordHex,
                         currentPasswordHex: nil
                     )
                 }
             }
+
+            // NavigationLink {
+            //     AuthNFCTestAuthView()
+            // } label: {
+            //     HStack(spacing: 10) {
+            //         Image(systemName: "key.viewfinder")
+            //             .font(.system(size: 15, weight: .semibold))
+            //         Text("Test Auth")
+            //             .font(.custom(Constants.Fonts.interBold, size: 17))
+            //     }
+            //     .frame(maxWidth: .infinity)
+            //     .padding(.vertical, 14)
+            //     .foregroundStyle(Color.brandBlue)
+            //     .background(
+            //         Color.brandBlue.opacity(0.15),
+            //         in: RoundedRectangle(cornerRadius: 12, style: .continuous)
+            //     )
+            // }
+            // .buttonStyle(.plain)
+            // .disabled(manager.isBusy)
+            // .accessibilityLabel("Test Auth")
 
             TagManagerActionButton(
                 title: "Remove Auth",

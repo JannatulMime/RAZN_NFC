@@ -40,6 +40,9 @@ enum AuthNFCError: Error, Equatable {
     case sessionAlreadyActive
     case connectionFailed(details: String)
     case operationInProgress
+    case invalidUID(details: String)
+    case missingMasterKey
+    case invalidMasterKey
 
     var title: String {
         switch self {
@@ -109,6 +112,12 @@ enum AuthNFCError: Error, Equatable {
             return "Connection Failed"
         case .operationInProgress:
             return "Operation In Progress"
+        case .invalidUID:
+            return "Invalid Tag UID"
+        case .missingMasterKey:
+            return "Master Key Missing"
+        case .invalidMasterKey:
+            return "Invalid Master Key"
         }
     }
 
@@ -180,6 +189,12 @@ enum AuthNFCError: Error, Equatable {
             return "Could not connect to the tag. \(details)"
         case .operationInProgress:
             return "An NFC operation is already running."
+        case .invalidUID(let details):
+            return "The tag UID could not be read or is not a supported 7-byte NTAG UID. \(details)"
+        case .missingMasterKey:
+            return "No NFC master key is configured for this build. Writing and NTAG215 provisioning are not allowed."
+        case .invalidMasterKey:
+            return "The configured NFC master key is invalid. It must be at least 64 hexadecimal characters (32 bytes)."
         }
     }
 
@@ -245,6 +260,12 @@ enum AuthNFCError: Error, Equatable {
             return "Wait for the current NFC sheet to finish, then try again."
         case .connectionFailed:
             return "Reposition the tag and retry."
+        case .invalidUID:
+            return "Hold a genuine NTAG215 steady and retry. UID must be exactly seven bytes from pages 0–1."
+        case .missingMasterKey:
+            return "Copy Config/Secrets.xcconfig.example to Config/Secrets.xcconfig, set RAZN_NFC_MASTER_KEY_HEX, then clean rebuild."
+        case .invalidMasterKey:
+            return "Fix RAZN_NFC_MASTER_KEY_HEX in Config/Secrets.xcconfig (64 hex chars), then clean rebuild."
         }
     }
 
@@ -259,7 +280,8 @@ enum AuthNFCError: Error, Equatable {
              .partialWriteFailure(let details),
              .sessionTimeoutOrInvalidation(let details),
              .unexpectedResponse(let details),
-             .connectionFailed(let details):
+             .connectionFailed(let details),
+             .invalidUID(let details):
             return details.isEmpty ? nil : details
         case .contentTooLarge(let maxUTF8Bytes):
             return "Demo stores a 2-byte length prefix plus UTF-8 (not NDEF). Max UTF-8 payload for this tag: \(maxUTF8Bytes)."
@@ -277,6 +299,10 @@ enum AuthNFCError: Error, Equatable {
             return "AUTH0 (CFG0 byte 3) is 0xFF when protection is disabled. This demo sets AUTH0 to 0x04 for write protection of user memory."
         case .configurationVerificationFailed:
             return "Expected AUTH0=0xFF on the variant CFG0 page after unregister. Local password is not cleared when verification fails."
+        case .missingMasterKey:
+            return "Info.plist RAZN_NFC_MASTER_KEY_HEX is empty and no DEBUG fallback applies."
+        case .invalidMasterKey:
+            return "Master key hex must parse to at least 32 bytes."
         default:
             return nil
         }

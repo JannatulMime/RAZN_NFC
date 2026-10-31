@@ -4,6 +4,8 @@
 <dict>
 	<key>FirebaseAutomaticScreenReportingEnabled</key>
 	<string>YES</string>
+	<key>RAZN_NFC_MASTER_KEY_HEX</key>
+	<string>$(RAZN_NFC_MASTER_KEY_HEX)</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Croogla4F.ttf</string>

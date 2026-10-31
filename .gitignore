@@ -5,6 +5,9 @@
 ## User settings
 xcuserdata/
 
+## Local NFC master key (never commit production secrets)
+Config/Secrets.xcconfig
+
 ## Obj-C/Swift specific
 *.hmap
 

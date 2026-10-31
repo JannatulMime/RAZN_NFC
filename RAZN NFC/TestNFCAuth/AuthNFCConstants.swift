@@ -53,6 +53,7 @@ enum AuthNFCConstants {
 
     static let passwordHexLength = 8
 
-    /// Fixed password for Tag Manager (tester mode). Display-only; not user-editable.
+    /// Legacy shared password for NTAG216 and migration of old NTAG213/215 cards.
+    /// NTAG213/215 production auth uses UID + HMAC master key instead.
     static let tagManagerPasswordHex = "AADDCCBB"
 }

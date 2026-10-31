@@ -4,8 +4,8 @@
 //
 //  Authentication gate + Type 2 NDEF page writer for the production write path.
 //  A production write is sent only after the tag is confirmed to be an NTAG213 or
-//  NTAG215 whose destination pages are password-protected, and PWD_AUTH with the
-//  Tag Manager password (AuthNFCConstants.tagManagerPasswordHex) succeeds.
+//  NTAG215 whose destination pages are password-protected, and PWD_AUTH succeeds:
+//  NTAG213 and NTAG215 use offline UID + HMAC master-key credentials.
 //  Unprotected tags and failed authentication do not write.
 //
 //  After MiFare commands (GET_VERSION / PWD_AUTH), Core NFC's queryNDEFStatus/writeNDEF
@@ -27,7 +27,8 @@ enum AuthNFCProductionWriteGate {
     /// Does not write payload or configuration pages.
     static func prepareAuthenticatedWrite(
         tag: any AuthNFCTagCommanding,
-        ndefMessage: NFCNDEFMessage
+        ndefMessage: NFCNDEFMessage,
+        masterKeyProvider: AuthNFCMasterKeyProviding = AuthNFCMasterKeyProvider.shared
     ) async throws -> AuthNFCProductionWritePrep {
         let (_, profile) = try await AuthNFCTagService.identifySupportedTag(tag)
         guard profile.variant == .ntag213 || profile.variant == .ntag215 else {
@@ -52,29 +53,37 @@ enum AuthNFCProductionWriteGate {
             throw AuthNFCError.unprotectedTag
         }
 
-        try await authenticateWithTagManagerPassword(tag: tag)
+        try await authenticateForProductionWrite(
+            tag: tag,
+            profile: profile,
+            masterKeyProvider: masterKeyProvider
+        )
         return AuthNFCProductionWritePrep(authenticated: true, profile: profile)
     }
 
     /// Production entry point for a live Core NFC tag.
     static func writeProtectedNDEF(
         tag: NFCMiFareTag,
-        message: NFCNDEFMessage
+        message: NFCNDEFMessage,
+        masterKeyProvider: AuthNFCMasterKeyProviding = AuthNFCMasterKeyProvider.shared
     ) async throws {
         try await writeProtectedNDEF(
             tag: AuthNFCMiFareCommandBox(tag: tag),
-            message: message
+            message: message,
+            masterKeyProvider: masterKeyProvider
         )
     }
 
     /// Production entry point. Writes only after `prepareAuthenticatedWrite` succeeds.
     static func writeProtectedNDEF(
         tag: any AuthNFCTagCommanding,
-        message: NFCNDEFMessage
+        message: NFCNDEFMessage,
+        masterKeyProvider: AuthNFCMasterKeyProviding = AuthNFCMasterKeyProvider.shared
     ) async throws {
         let prep = try await prepareAuthenticatedWrite(
             tag: tag,
-            ndefMessage: message
+            ndefMessage: message,
+            masterKeyProvider: masterKeyProvider
         )
         guard prep.authenticated else {
             throw AuthNFCError.authenticationRequired
@@ -229,13 +238,27 @@ enum AuthNFCProductionWriteGate {
         return [0xE1, 0x10, sizeByte, 0x00]
     }
 
-    private static func authenticateWithTagManagerPassword(
-        tag: any AuthNFCTagCommanding
+    private static func authenticateForProductionWrite(
+        tag: any AuthNFCTagCommanding,
+        profile: AuthNFCTagProfile,
+        masterKeyProvider: AuthNFCMasterKeyProviding
     ) async throws {
-        let password = try AuthNFCPasswordService.passwordBytes(
-            fromHex: AuthNFCConstants.tagManagerPasswordHex
-        )
-        let pack = AuthNFCPasswordService.derivedPACK(fromPasswordBytes: password)
+        let password: [UInt8]
+        let pack: [UInt8]
+        switch profile.variant {
+        case .ntag213, .ntag215:
+            let uid = try await AuthNFCTagService.readUID(tag)
+            let credentials = try AuthNFCCredentialDerivation.deriveCredentials(
+                uid: uid,
+                masterKeyProvider: masterKeyProvider
+            )
+            password = credentials.password
+            pack = credentials.pack
+        case .ntag216:
+            throw AuthNFCError.unsupportedTagType(
+                details: "Production writes accept NTAG213 and NTAG215 only."
+            )
+        }
         do {
             try await AuthNFCTagService.authenticate(tag, password: password, expectedPACK: pack)
         } catch AuthNFCError.packMismatch {
@@ -293,6 +316,10 @@ struct AuthNFCProductionWriteAlert: Identifiable, Equatable {
             return "No NFC Password Stored"
         case .invalidPasswordFormat:
             return "Invalid Password"
+        case .missingMasterKey, .invalidMasterKey:
+            return error.title
+        case .invalidUID:
+            return "Invalid Tag UID"
         case .tagRemoved, .connectionFailed, .sessionTimeoutOrInvalidation, .nfcUnavailable:
             return "NFC Communication Failed"
         default:
@@ -305,7 +332,7 @@ struct AuthNFCProductionWriteAlert: Identifiable, Equatable {
         case .unprotectedTag:
             return "This tag does not have password protection enabled. Writing is not allowed."
         case .authenticationRejected, .packMismatch:
-            return "Authentication failed. This tag does not match the password configured in this app. Writing is not allowed."
+            return "Authentication failed. This tag does not match the expected credentials. Writing is not allowed."
         case .unsupportedTagType, .versionIdentificationFailed:
             return "This tag is not a supported NTAG213 or NTAG215. Writing is not allowed."
         case .configurationUnreadable:
@@ -314,6 +341,12 @@ struct AuthNFCProductionWriteAlert: Identifiable, Equatable {
             return "No NFC password is stored on this iPhone. Save an 8-character hexadecimal password before writing. Writing is not allowed."
         case .invalidPasswordFormat:
             return "The stored NFC password must be exactly eight hexadecimal characters. Writing is not allowed."
+        case .missingMasterKey:
+            return "This build has no NFC master key configured. Writing is not allowed."
+        case .invalidMasterKey:
+            return "The configured NFC master key is invalid. Writing is not allowed."
+        case .invalidUID:
+            return "The tag UID could not be read or is unsupported. Writing is not allowed."
         case .tagRemoved, .connectionFailed, .sessionTimeoutOrInvalidation:
             return "The tag could not be read reliably. Keep it near the iPhone and try again. Nothing was written."
         case .nfcUnavailable:
