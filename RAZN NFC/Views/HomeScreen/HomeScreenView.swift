@@ -14,6 +14,10 @@ enum Screens: Hashable {
 
 struct RootView: View {
     @State private var path: [Screens] = []
+    @StateObject private var versionViewModel = AppVersionViewModel()
+    @State private var showForceUpdate = false
+    @State private var forceUpdateMessage = ""
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack(path: $path) {
@@ -30,6 +34,44 @@ struct RootView: View {
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
         .keyboardLayoutLocked()
+        .onAppear {
+            versionViewModel.checkOnLaunch()
+        }
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .active {
+                versionViewModel.recheckIfNeededOnBecomeActive()
+            }
+        }
+        .onChange(of: versionViewModel.state) { newState in
+            switch newState {
+            case .updateRequired(let message, _):
+                forceUpdateMessage = message
+                showForceUpdate = true
+            case .allowed:
+                showForceUpdate = false
+            }
+        }
+        .fullScreenCover(isPresented: forceUpdateCoverBinding) {
+            ForceUpdateView(
+                message: forceUpdateMessage,
+                canOpenAppStore: true,
+                onUpdateNow: { versionViewModel.openAppStore() }
+            )
+            .interactiveDismissDisabled()
+        }
+    }
+
+    /// Ignores dismiss attempts while an update is still required.
+    private var forceUpdateCoverBinding: Binding<Bool> {
+        Binding(
+            get: { showForceUpdate },
+            set: { newValue in
+                if !newValue, case .updateRequired = versionViewModel.state {
+                    return
+                }
+                showForceUpdate = newValue
+            }
+        )
     }
 }
 

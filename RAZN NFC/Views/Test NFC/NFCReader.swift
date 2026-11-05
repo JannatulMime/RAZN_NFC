@@ -104,7 +104,7 @@ class NFCReader: NSObject, ObservableObject, NFCNDEFReaderSessionDelegate, NFCTa
             failWrite(session: nil, generation: generation, error: AuthNFCError.nfcUnavailable)
             return
         }
-        session.alertMessage = "Hold your iPhone near an NFC tag to write."
+        session.alertMessage = "Hold your iPhone near your ReTag to save your link"
         tagSession = session
         session.begin()
     }

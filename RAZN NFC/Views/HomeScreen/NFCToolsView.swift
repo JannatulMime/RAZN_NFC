@@ -302,7 +302,7 @@ struct NFCToolsView: View {
             InteractionFeedback.tap()
             vm.writeNFC()
         }) {
-            Text("Write")
+            Text("Save to ReTag")
                 .font(.custom(Constants.Fonts.interBold, size: 20))
                 .foregroundStyle(Color.white)
                 .frame(maxWidth: .infinity)

@@ -27,11 +27,9 @@ struct RAZN_NFCApp: App {
         @StateObject var nfcWriteInfoVM: NFCWriteInfoVM = NFCWriteInfoVM()
 
         WindowGroup {
-            VersionCheckGateView {
-                RootView()
-                    .environmentObject(nfcWriteInfoVM)
-                    .keyboardLayoutLocked()
-            }
+            RootView()
+                .environmentObject(nfcWriteInfoVM)
+                .keyboardLayoutLocked()
             //ContentView()
         }
     }

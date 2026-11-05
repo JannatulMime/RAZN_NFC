@@ -132,9 +132,9 @@ final class AppVersionViewModelTests: XCTestCase {
         }
     }
 
-    // MARK: - Config / network failures
+    // MARK: - Config / network failures (fail open)
 
-    func testMissingInstalledVersionFailsClosed() async {
+    func testMissingInstalledVersionFailsOpen() async {
         let fetcher = MockFetcher(result: .success(makeConfig()))
         let sut = AppVersionViewModel(
             fetcher: fetcher,
@@ -142,14 +142,12 @@ final class AppVersionViewModelTests: XCTestCase {
         )
 
         sut.checkOnLaunch()
-        await waitForState(sut) {
-            if case .failed = $0 { return true }
-            return false
-        }
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        XCTAssertEqual(sut.state, .allowed)
         XCTAssertEqual(fetcher.fetchCount, 0)
     }
 
-    func testInvalidRemoteConfigurationFailsClosed() async {
+    func testInvalidRemoteConfigurationFailsOpen() async {
         let fetcher = MockFetcher(result: .failure(
             AppVersionCheckError.invalidConfiguration(.invalidMinimumSupportedVersion)
         ))
@@ -159,44 +157,41 @@ final class AppVersionViewModelTests: XCTestCase {
         )
 
         sut.checkOnLaunch()
-        await waitForState(sut) {
-            if case .failed = $0 { return true }
-            return false
-        }
-    }
-
-    func testNetworkFailureFailsClosedOnInitialCheck() async {
-        let fetcher = MockFetcher(result: .failure(AppVersionCheckError.networkUnavailable))
-        let sut = AppVersionViewModel(
-            fetcher: fetcher,
-            installedVersionProvider: MockInstalledVersion(shortVersionString: "5.0")
-        )
-
-        sut.checkOnLaunch()
-        await waitForState(sut) {
-            if case .failed = $0 { return true }
-            return false
-        }
-    }
-
-    func testRetryAfterFailureSucceeds() async {
-        let fetcher = MockFetcher(result: .failure(AppVersionCheckError.networkUnavailable))
-        let sut = AppVersionViewModel(
-            fetcher: fetcher,
-            installedVersionProvider: MockInstalledVersion(shortVersionString: "5.0")
-        )
-
-        sut.checkOnLaunch()
-        await waitForState(sut) {
-            if case .failed = $0 { return true }
-            return false
-        }
-
-        fetcher.result = .success(makeConfig(force: false))
-        sut.retry()
         await waitForState(sut) { $0 == .allowed }
         XCTAssertEqual(sut.state, .allowed)
-        XCTAssertEqual(fetcher.fetchCount, 2)
+    }
+
+    func testNetworkFailureFailsOpenOnInitialCheck() async {
+        let fetcher = MockFetcher(result: .failure(AppVersionCheckError.networkUnavailable))
+        let sut = AppVersionViewModel(
+            fetcher: fetcher,
+            installedVersionProvider: MockInstalledVersion(shortVersionString: "5.0")
+        )
+
+        sut.checkOnLaunch()
+        await waitForState(sut) { $0 == .allowed }
+        XCTAssertEqual(sut.state, .allowed)
+    }
+
+    func testUpdateRequiredSurvivesTransientForegroundNetworkFailure() async {
+        let fetcher = MockFetcher(result: .success(makeConfig(minimum: "9.0", force: true)))
+        let sut = AppVersionViewModel(
+            fetcher: fetcher,
+            installedVersionProvider: MockInstalledVersion(shortVersionString: "5.0")
+        )
+
+        sut.checkOnLaunch()
+        await waitForState(sut) {
+            if case .updateRequired = $0 { return true }
+            return false
+        }
+
+        fetcher.result = .failure(AppVersionCheckError.networkUnavailable)
+        sut.recheckIfNeededOnBecomeActive()
+        try? await Task.sleep(nanoseconds: 50_000_000)
+        guard case .updateRequired = sut.state else {
+            return XCTFail("Expected to remain updateRequired after transient network failure")
+        }
     }
 
     func testAllowedStateSurvivesTransientForegroundNetworkFailure() async {

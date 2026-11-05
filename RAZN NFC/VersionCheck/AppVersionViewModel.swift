@@ -7,15 +7,13 @@ import Foundation
 import UIKit
 
 enum AppVersionCheckState: Equatable {
-    case loading
     case updateRequired(message: String, appStoreURL: URL?)
     case allowed
-    case failed(message: String)
 }
 
 @MainActor
 final class AppVersionViewModel: ObservableObject {
-    @Published private(set) var state: AppVersionCheckState = .loading
+    @Published private(set) var state: AppVersionCheckState = .allowed
 
     private let fetcher: AppVersionFetching
     private let installedVersionProvider: InstalledVersionProviding
@@ -34,18 +32,14 @@ final class AppVersionViewModel: ObservableObject {
     }
 
     func checkOnLaunch() {
-        performCheck(showLoading: true)
-    }
-
-    func retry() {
-        performCheck(showLoading: true)
+        // Non-blocking: main UI stays up while the check runs in the background.
+        performCheck()
     }
 
     /// Recheck when returning to foreground. Skips if a check is already in flight.
-    /// Keeps the current UI visible (no full-screen loading flash) while refreshing.
     func recheckIfNeededOnBecomeActive() {
         guard checkTask == nil else { return }
-        performCheck(showLoading: false)
+        performCheck()
     }
 
     func openAppStore() {
@@ -74,11 +68,8 @@ final class AppVersionViewModel: ObservableObject {
 
     // MARK: - Private
 
-    private func performCheck(showLoading: Bool) {
+    private func performCheck() {
         checkTask?.cancel()
-        if showLoading {
-            state = .loading
-        }
 
         checkTask = Task { [weak self] in
             guard let self else { return }
@@ -94,8 +85,10 @@ final class AppVersionViewModel: ObservableObject {
         guard let installed = installedVersionProvider.shortVersionString?
             .trimmingCharacters(in: .whitespacesAndNewlines),
               !installed.isEmpty else {
-            print("[AppVersion] CFBundleShortVersionString missing or empty")
-            state = .failed(message: Self.failureMessage)
+            print("[AppVersion] CFBundleShortVersionString missing or empty — fail open")
+            // Fail open so the main UI is not blocked by a bad local version string.
+            if case .updateRequired = previousState { return }
+            state = .allowed
             return
         }
 
@@ -121,17 +114,11 @@ final class AppVersionViewModel: ObservableObject {
                 state = .allowed
             }
         } catch {
-            print("[AppVersion] check failed: \(error)")
+            print("[AppVersion] check failed (fail open): \(error)")
             if Task.isCancelled { return }
-            // Initial / blocking checks fail closed. After access was granted, keep the
-            // session usable on transient network errors until the next successful fetch.
-            if case .allowed = previousState {
-                return
-            }
-            state = .failed(message: Self.failureMessage)
+            // Fail open: keep the app usable unless a prior check already required an update.
+            if case .updateRequired = previousState { return }
+            state = .allowed
         }
     }
-
-    private static let failureMessage =
-        "We couldn’t verify that this version of RAZN is supported. Check your connection and try again."
 }
