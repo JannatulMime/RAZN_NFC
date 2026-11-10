@@ -14,23 +14,49 @@ struct InputSectionView: View {
     var showTrailingOverlayClear: Bool = false
     /// When set (NFCToolsView only): leading icon swaps to share when input is a valid web URL; tap shares the normalized link string.
     var onShareLink: ((String) -> Void)? = nil
+    /// When true, unfocused non-empty text shows a cleaner domain/social label while keeping the raw binding unchanged.
+    var showsFormattedDisplay: Bool = true
+
+    @FocusState private var isFieldFocused: Bool
+
+    private var showsDisplayOverlay: Bool {
+        showsFormattedDisplay && !isFieldFocused && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var displayLabel: String {
+        NFCLinkDisplayFormatter.displayLabel(for: text)
+    }
 
     var body: some View {
         HStack(spacing: 12) {
             leadingIcon
 
             HStack(spacing: 8) {
-                TextField(
-                    "",
-                    text: $text,
-                    prompt: Text("Paste your link")
-                        .foregroundColor(Color(red: 0.62, green: 0.66, blue: 0.72))
-                        .font(.custom(Constants.Fonts.interRegular, size: 13))
-                )
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled(true)
-                .foregroundColor(Color.black.opacity(0.85))
-                .font(.custom(Constants.Fonts.interRegular, size: 16))
+                ZStack(alignment: .leading) {
+                    TextField(
+                        "",
+                        text: $text,
+                        prompt: Text("Paste your link")
+                            .foregroundColor(Color(red: 0.62, green: 0.66, blue: 0.72))
+                            .font(.custom(Constants.Fonts.interRegular, size: 13))
+                    )
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled(true)
+                    .foregroundColor(showsDisplayOverlay ? .clear : Color.black.opacity(0.85))
+                    .font(.custom(Constants.Fonts.interRegular, size: 16))
+                    .focused($isFieldFocused)
+
+                    if showsDisplayOverlay {
+                        Text(displayLabel)
+                            .font(.custom(Constants.Fonts.interRegular, size: 16))
+                            .foregroundColor(Color.black.opacity(0.85))
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .allowsHitTesting(false)
+                            .accessibilityHidden(true)
+                    }
+                }
 
                 if showTrailingOverlayClear, !text.isEmpty {
                     Button(action: { onClear?() }) {
@@ -93,6 +119,8 @@ struct InputSectionView: View {
                 .stroke(Color.black.opacity(0.06), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.12), radius: 20, x: 0, y: 8)
+        .accessibilityElement(children: .contain)
+        .accessibilityValue(showsDisplayOverlay ? displayLabel : text)
     }
 
     @ViewBuilder
@@ -142,7 +170,7 @@ struct InputSectionView_Previews: PreviewProvider {
     static var previews: some View {
         ZStack {
             Color.black.ignoresSafeArea()
-            InputSectionView(text: .constant(""), onPaste: {})
+            InputSectionView(text: .constant("https://www.instagram.com/razn"), onPaste: {})
                 .padding()
         }
     }

@@ -37,7 +37,9 @@ struct EditLinkSheet: View {
                 .font(.custom(Constants.Fonts.interRegular, size: 26))
                 .foregroundStyle(.white)
 
-            Text(icon.hasLink ? (icon.savedLink ?? "") : "No link saved")
+            Text(icon.hasLink
+                 ? NFCLinkDisplayFormatter.displayLabel(for: icon.savedLink ?? "")
+                 : "No link saved")
                 .font(.custom(Constants.Fonts.interRegular, size: 14))
                 .foregroundStyle(.white.opacity(0.7))
                 .lineLimit(1)
